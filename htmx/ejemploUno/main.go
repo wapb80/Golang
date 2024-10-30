@@ -27,7 +27,8 @@ func main() {
 	http.HandleFunc("/item", getItemPage)
 
 	// Servir el directorio estático para HTMX
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./ejemploUno/static"))))
+	fileServer := http.FileServer(http.Dir("./static"))
+	http.Handle("GET /static/", http.StripPrefix("/static", fileServer))
 
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
