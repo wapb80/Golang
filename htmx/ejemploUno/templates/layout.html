@@ -1,0 +1,28 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTMX + Go App</title>
+    <!-- <script src="/static/htmx.min.js"></script>  -->
+    <!-- <script src="https://unpkg.com/htmx.org@1.9.2/dist/htmx.min.js"></script> -->
+    <script src="https://unpkg.com/htmx.org@2.0.3/dist/htmx.js" integrity="sha384-BBDmZzVt6vjz5YbQqZPtFZW82o8QotoM7RUp5xOxV3nSJ8u2pSdtzFAbGKzTlKtg" crossorigin="anonymous"></script>
+
+
+
+</head>
+<body>
+    <h1>Lista de Items</h1>
+    {{range .}}
+        <div hx-get="/item?id={{.ID}}" hx-trigger="click" hx-target="#content">
+        <!-- <div hx-get="/item?id=1" hx-trigger="click" hx-target="#content"> -->
+            <p>Haz clic aquí para cargar el contenido de {{.Title}}</p>
+        </div>
+    {{end}}
+    <div id="content">
+        <!-- HTMX cargará aquí el contenido de cada item -->
+    </div>
+</body>
+</html>
+{{end}}

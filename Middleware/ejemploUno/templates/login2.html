@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autenticación con HTMX</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+</head>
+<body>
+    <h1>Inicio de Sesión 2</h1>
+    <form hx-post="/login" hx-target="#response" hx-ext="json-enc">
+        <input type="text" name="username" placeholder="Usuario" required>
+        <input type="password" name="password" placeholder="Contraseña" required>
+        <button type="submit">Iniciar Sesión</button>
+    </form>
+    
+    <div id="response"></div>
+
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+</body>
+</html>

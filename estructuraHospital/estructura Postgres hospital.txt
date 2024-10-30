@@ -1,0 +1,392 @@
+-- DROP SCHEMA hospital;
+
+CREATE SCHEMA hospital AUTHORIZATION postgres;
+
+-- DROP SEQUENCE hospital.cargos_id_seq;
+
+CREATE SEQUENCE hospital.cargos_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.diagnosticos_id_seq;
+
+CREATE SEQUENCE hospital.diagnosticos_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.enfermedades_id_seq;
+
+CREATE SEQUENCE hospital.enfermedades_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.especialidades_id_seq;
+
+CREATE SEQUENCE hospital.especialidades_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.medicamentos_id_seq;
+
+CREATE SEQUENCE hospital.medicamentos_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.pacientes_id_seq;
+
+CREATE SEQUENCE hospital.pacientes_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.permisos_id_seq;
+
+CREATE SEQUENCE hospital.permisos_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.personal_id_seq;
+
+CREATE SEQUENCE hospital.personal_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.recetas_medicas_id_seq;
+
+CREATE SEQUENCE hospital.recetas_medicas_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.roles_id_seq;
+
+CREATE SEQUENCE hospital.roles_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.tokens_id_seq;
+
+CREATE SEQUENCE hospital.tokens_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE hospital.usuarios_id_seq;
+
+CREATE SEQUENCE hospital.usuarios_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	START 1
+	CACHE 1
+	NO CYCLE;-- hospital.cargos definition
+
+-- Drop table
+
+-- DROP TABLE hospital.cargos;
+
+CREATE TABLE hospital.cargos (
+	id serial4 NOT NULL,
+	nombre varchar(50) NOT NULL,
+	CONSTRAINT cargos_pkey PRIMARY KEY (id)
+);
+
+
+-- hospital.enfermedades definition
+
+-- Drop table
+
+-- DROP TABLE hospital.enfermedades;
+
+CREATE TABLE hospital.enfermedades (
+	id serial4 NOT NULL,
+	nombre varchar(100) NOT NULL,
+	descripcion text NULL,
+	CONSTRAINT enfermedades_pkey PRIMARY KEY (id)
+);
+
+
+-- hospital.especialidades definition
+
+-- Drop table
+
+-- DROP TABLE hospital.especialidades;
+
+CREATE TABLE hospital.especialidades (
+	id serial4 NOT NULL,
+	nombre varchar(100) NOT NULL,
+	CONSTRAINT especialidades_pkey PRIMARY KEY (id)
+);
+
+
+-- hospital.medicamentos definition
+
+-- Drop table
+
+-- DROP TABLE hospital.medicamentos;
+
+CREATE TABLE hospital.medicamentos (
+	id serial4 NOT NULL,
+	nombre varchar(100) NOT NULL,
+	descripcion text NULL,
+	CONSTRAINT medicamentos_pkey PRIMARY KEY (id)
+);
+
+
+-- hospital.pacientes definition
+
+-- Drop table
+
+-- DROP TABLE hospital.pacientes;
+
+CREATE TABLE hospital.pacientes (
+	id serial4 NOT NULL,
+	nombre varchar(100) NOT NULL,
+	apellido varchar(100) NOT NULL,
+	fecha_nacimiento date NULL,
+	email varchar(100) NULL,
+	CONSTRAINT pacientes_email_key UNIQUE (email),
+	CONSTRAINT pacientes_pkey PRIMARY KEY (id)
+);
+
+
+-- hospital.permisos definition
+
+-- Drop table
+
+-- DROP TABLE hospital.permisos;
+
+CREATE TABLE hospital.permisos (
+	id serial4 NOT NULL,
+	nombre varchar(100) NOT NULL,
+	descripcion text NULL,
+	CONSTRAINT permisos_nombre_key UNIQUE (nombre),
+	CONSTRAINT permisos_pkey PRIMARY KEY (id)
+);
+
+
+-- hospital.roles definition
+
+-- Drop table
+
+-- DROP TABLE hospital.roles;
+
+CREATE TABLE hospital.roles (
+	id serial4 NOT NULL,
+	nombre varchar(50) NOT NULL,
+	CONSTRAINT roles_nombre_key UNIQUE (nombre),
+	CONSTRAINT roles_pkey PRIMARY KEY (id)
+);
+
+
+-- hospital.diagnosticos definition
+
+-- Drop table
+
+-- DROP TABLE hospital.diagnosticos;
+
+CREATE TABLE hospital.diagnosticos (
+	id serial4 NOT NULL,
+	paciente_id int4 NULL,
+	descripcion text NULL,
+	fecha date NOT NULL,
+	CONSTRAINT diagnosticos_pkey PRIMARY KEY (id),
+	CONSTRAINT diagnosticos_paciente_id_fkey FOREIGN KEY (paciente_id) REFERENCES hospital.pacientes(id) ON DELETE CASCADE
+);
+
+
+-- hospital.personal definition
+
+-- Drop table
+
+-- DROP TABLE hospital.personal;
+
+CREATE TABLE hospital.personal (
+	id serial4 NOT NULL,
+	nombre varchar(100) NOT NULL,
+	apellido varchar(100) NOT NULL,
+	email varchar(100) NULL,
+	telefono varchar(20) NULL,
+	fecha_nacimiento date NULL,
+	cargo_id int4 NULL,
+	CONSTRAINT personal_email_key UNIQUE (email),
+	CONSTRAINT personal_pkey PRIMARY KEY (id),
+	CONSTRAINT personal_cargo_id_fkey FOREIGN KEY (cargo_id) REFERENCES hospital.cargos(id) ON DELETE SET NULL
+);
+
+
+-- hospital.personal_especialidad definition
+
+-- Drop table
+
+-- DROP TABLE hospital.personal_especialidad;
+
+CREATE TABLE hospital.personal_especialidad (
+	persona_id int4 NOT NULL,
+	especialidad_id int4 NOT NULL,
+	CONSTRAINT personal_especialidad_pkey PRIMARY KEY (persona_id, especialidad_id),
+	CONSTRAINT personal_especialidad_especialidad_id_fkey FOREIGN KEY (especialidad_id) REFERENCES hospital.especialidades(id) ON DELETE CASCADE,
+	CONSTRAINT personal_especialidad_persona_id_fkey FOREIGN KEY (persona_id) REFERENCES hospital.personal(id) ON DELETE CASCADE
+);
+
+
+-- hospital.recetas_medicas definition
+
+-- Drop table
+
+-- DROP TABLE hospital.recetas_medicas;
+
+CREATE TABLE hospital.recetas_medicas (
+	id serial4 NOT NULL,
+	paciente_id int4 NULL,
+	fecha date NOT NULL,
+	observaciones text NULL,
+	CONSTRAINT recetas_medicas_pkey PRIMARY KEY (id),
+	CONSTRAINT recetas_medicas_paciente_id_fkey FOREIGN KEY (paciente_id) REFERENCES hospital.pacientes(id) ON DELETE CASCADE
+);
+
+
+-- hospital.rol_permiso definition
+
+-- Drop table
+
+-- DROP TABLE hospital.rol_permiso;
+
+CREATE TABLE hospital.rol_permiso (
+	rol_id int4 NOT NULL,
+	permiso_id int4 NOT NULL,
+	CONSTRAINT rol_permiso_pkey PRIMARY KEY (rol_id, permiso_id),
+	CONSTRAINT rol_permiso_permiso_id_fkey FOREIGN KEY (permiso_id) REFERENCES hospital.permisos(id) ON DELETE CASCADE,
+	CONSTRAINT rol_permiso_rol_id_fkey FOREIGN KEY (rol_id) REFERENCES hospital.roles(id) ON DELETE CASCADE
+);
+
+
+-- hospital.usuarios definition
+
+-- Drop table
+
+-- DROP TABLE hospital.usuarios;
+
+CREATE TABLE hospital.usuarios (
+	id serial4 NOT NULL,
+	email varchar(100) NOT NULL,
+	"password" varchar(100) NOT NULL,
+	activo bool DEFAULT true NULL,
+	creado_en timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	personal_id int4 NULL,
+	CONSTRAINT usuarios_email_key UNIQUE (email),
+	CONSTRAINT usuarios_pkey PRIMARY KEY (id),
+	CONSTRAINT usuarios_personal_id_fkey FOREIGN KEY (personal_id) REFERENCES hospital.personal(id) ON DELETE SET NULL
+);
+
+
+-- hospital.diagnostico_enfermedad definition
+
+-- Drop table
+
+-- DROP TABLE hospital.diagnostico_enfermedad;
+
+CREATE TABLE hospital.diagnostico_enfermedad (
+	diagnostico_id int4 NOT NULL,
+	enfermedad_id int4 NOT NULL,
+	CONSTRAINT diagnostico_enfermedad_pkey PRIMARY KEY (diagnostico_id, enfermedad_id),
+	CONSTRAINT diagnostico_enfermedad_diagnostico_id_fkey FOREIGN KEY (diagnostico_id) REFERENCES hospital.diagnosticos(id) ON DELETE CASCADE,
+	CONSTRAINT diagnostico_enfermedad_enfermedad_id_fkey FOREIGN KEY (enfermedad_id) REFERENCES hospital.enfermedades(id) ON DELETE CASCADE
+);
+
+
+-- hospital.persona_paciente definition
+
+-- Drop table
+
+-- DROP TABLE hospital.persona_paciente;
+
+CREATE TABLE hospital.persona_paciente (
+	persona_id int4 NOT NULL,
+	paciente_id int4 NOT NULL,
+	CONSTRAINT persona_paciente_pkey PRIMARY KEY (persona_id, paciente_id),
+	CONSTRAINT persona_paciente_paciente_id_fkey FOREIGN KEY (paciente_id) REFERENCES hospital.pacientes(id) ON DELETE CASCADE,
+	CONSTRAINT persona_paciente_persona_id_fkey FOREIGN KEY (persona_id) REFERENCES hospital.personal(id) ON DELETE CASCADE
+);
+
+
+-- hospital.receta_medicamento definition
+
+-- Drop table
+
+-- DROP TABLE hospital.receta_medicamento;
+
+CREATE TABLE hospital.receta_medicamento (
+	receta_id int4 NOT NULL,
+	medicamento_id int4 NOT NULL,
+	dosis varchar(50) NULL,
+	frecuencia varchar(50) NULL,
+	CONSTRAINT receta_medicamento_pkey PRIMARY KEY (receta_id, medicamento_id),
+	CONSTRAINT receta_medicamento_medicamento_id_fkey FOREIGN KEY (medicamento_id) REFERENCES hospital.medicamentos(id) ON DELETE CASCADE,
+	CONSTRAINT receta_medicamento_receta_id_fkey FOREIGN KEY (receta_id) REFERENCES hospital.recetas_medicas(id) ON DELETE CASCADE
+);
+
+
+-- hospital.tokens definition
+
+-- Drop table
+
+-- DROP TABLE hospital.tokens;
+
+CREATE TABLE hospital.tokens (
+	id serial4 NOT NULL,
+	usuario_id int4 NULL,
+	token_acceso varchar(255) NOT NULL,
+	refresh_token varchar(255) NOT NULL,
+	expiracion_acceso timestamp NOT NULL,
+	expiracion_refresh timestamp NOT NULL,
+	creado_en timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	actualizado_en timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT tokens_pkey PRIMARY KEY (id),
+	CONSTRAINT tokens_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES hospital.usuarios(id) ON DELETE CASCADE
+);
+
+
+-- hospital.usuario_rol definition
+
+-- Drop table
+
+-- DROP TABLE hospital.usuario_rol;
+
+CREATE TABLE hospital.usuario_rol (
+	usuario_id int4 NOT NULL,
+	rol_id int4 NOT NULL,
+	CONSTRAINT usuario_rol_pkey PRIMARY KEY (usuario_id, rol_id),
+	CONSTRAINT usuario_rol_rol_id_fkey FOREIGN KEY (rol_id) REFERENCES hospital.roles(id) ON DELETE CASCADE,
+	CONSTRAINT usuario_rol_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES hospital.usuarios(id) ON DELETE CASCADE
+);
