@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+</head>
+<body>
+
+<div class="container-fluid">
+    <header class="d-flex justify-content-between align-items-center p-3 bg-primary text-white">
+        <h1>Mi Panel de Administración</h1>
+        <button class="btn btn-light" data-toggle="modal" data-target="#modal-add">Agregar Usuario</button>
+        
+        <!-- Modal para agregar usuario -->
+        <div class="modal fade" id="modal-add" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Agregar Usuario</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="add-user-form">
+                            <div class="form-group">
+                                <label for="add-user-name">Nombre:</label>
+                                <input type="text" id="add-user-name" name="name" class="form-control">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="add-user-email">Email:</label>
+                                <input type="email" id="add-user-email" name="email" class="form-control">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="add-user-image">Imagen URL:</label>
+                                <input type="text" id="add-user-image" name="image" class="form-control">
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Agregar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal para modificar usuario -->
+        <div id="modal-edit" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Modificar Usuario</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="edit-user-form">
+                            <input type='hidden' id='edit-user-id' name='id'>
+                            <div class='form-group'>
+                                <label for='edit-user-name'>Nombre:</label>
+                                <input type='text' id='edit-user-name' name='name' class='form-control'>
+                            </div>
+
+                            <div class='form-group'>
+                                <label for='edit-user-email'>Email:</label>
+                                <input type='email' id='edit-user-email' name='email' class='form-control'>
+                            </div>
+
+                            <!-- Puedes agregar más campos según sea necesario -->
+
+                            <button type='submit' class='btn btn-primary'>Guardar Cambios</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+      <!-- Tabla de usuarios -->
+      <table id='example' class='table table-striped table-bordered' style='width:100%'>
+          <thead>
+              <tr>
+                  <th>Imagen</th>
+                  <th>Nombre</th>
+                  <th>Email</th>
+                  <th>Acciones</th>
+              </tr>
+          </thead>
+          <tbody id='user-table-body'></tbody>
+      </table>
+
+      <!-- Footer -->
+      <footer class='footer bg-primary text-white text-center p-3'>
+          &copy; 2024 Mi Empresa
+      </footer>
+
+  </header>
+
+<script src='https://code.jquery.com/jquery-3.6.0.min.js'></script>
+<script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js'></script>
+<script src='https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js'></script>
+
+<script>
+// Cargar usuarios al iniciar
+$(document).ready(function() {
+  loadUsers();
+
+  // Manejar el envío del formulario para agregar usuario
+  $('#add-user-form').on('submit', function(event) {
+      event.preventDefault();
+      const formData = $(this).serialize();
+      
+      $.post('/add', formData).done(function() {
+          $('#modal-add').modal('hide');
+          loadUsers();
+      });
+  });
+
+  // Manejar el envío del formulario para editar usuario
+  $('#edit-user-form').on('submit', function(event) {
+      event.preventDefault();
+      const formData = $(this).serialize();
+      
+      $.post('/edit', formData).done(function() {
+          $('#modal-edit').modal('hide');
+          loadUsers();
+      });
+  });
+});
+
+// Cargar usuarios desde el servidor
+function loadUsers() {
+  $.get('/users', function(data) {
+      $('#user-table-body').empty();
+      data.forEach(user => {
+          $('#user-table-body').append(`
+              <tr>
+                  <td><img src="${user.image}" alt="${user.name}" style='width:50px;height:50px;border-radius:50%;'></td>
+                  <td>${user.name}</td>
+                  <td>${user.email}</td>
+                  <td>
+                      <button onclick='editUser(${JSON.stringify(user)})' class='btn btn-warning btn-sm'>Modificar</button> 
+                      | 
+                      <button onclick='deleteUser(${user.id})' class='btn btn-danger btn-sm'>Eliminar</button>
+                  </td>
+              </tr>`);
+      });
+      $('#example').DataTable(); // Inicializar DataTable después de cargar los datos
+  });
+}
+
+// Función para editar usuario y mostrar en modal
+function editUser(user) {
+  $('#edit-user-id').val(user.id);
+  $('#edit-user-name').val(user.name);
+  $('#edit-user-email').val(user.email);
+  
+  $('#modal-edit').modal('show');
+}
+
+// Función para eliminar usuario (solo muestra un mensaje)
+function deleteUser(userId) {
+  if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+      $.get(`/delete?id=${userId}`).done(function() {
+          loadUsers();
+      });
+  }
+}
+</script>
+
+</body>
+</html>

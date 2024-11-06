@@ -22,9 +22,12 @@ var items = []Item{
 }
 
 func main() {
-	http.HandleFunc("/", renderHomePage)
-	http.HandleFunc("/api/items", getItemsAPI)
-	http.HandleFunc("/item", getItemPage)
+	http.HandleFunc("GET /home", renderHomePage)
+	http.HandleFunc("POST /api/items", getItemsAPI)
+	http.HandleFunc("GET /item", getItemPage)
+	http.HandleFunc("GET /modal", getModal)
+	http.HandleFunc("GET /uikit-modal", getModal2)
+	http.HandleFunc("GET /edit", getEdit)
 
 	// Servir el directorio estático para HTMX
 	fileServer := http.FileServer(http.Dir("./static"))
@@ -91,4 +94,39 @@ func getItemPage(w http.ResponseWriter, r *http.Request) {
 	}
 	// tmpl.Execute(w, selectedItem)
 	tmpl.ExecuteTemplate(w, "content", selectedItem)
+}
+
+func getModal(w http.ResponseWriter, r *http.Request) {
+
+	tmpl, err := template.ParseFiles("modalUlkit/index.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	tmpl.Execute(w, nil)
+	// tmpl.ExecuteTemplate(w)
+
+}
+
+func getModal2(w http.ResponseWriter, r *http.Request) {
+
+	tmpl, err := template.ParseFiles("modalUlkit/uikit-modal.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tmpl.Execute(w, nil)
+	// tmpl.ExecuteTemplate(w)
+
+}
+
+func getEdit(w http.ResponseWriter, r *http.Request) {
+
+	tmpl, err := template.ParseFiles("templates/edit.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tmpl.Execute(w, nil)
+	// tmpl.ExecuteTemplate(w)
+
 }

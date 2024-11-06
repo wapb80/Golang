@@ -1,0 +1,27 @@
+<div class="d-flex justify-content-between mb-3">
+    <h2>Usuarios</h2>
+    <button hx-get="/users/create" class="btn btn-primary">Crear Usuario</button>
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td>{{.Name}}</td>
+            <td>{{.Email}}</td>
+            <td>
+                <button hx-get="/users/edit/{{.ID}}" class="btn btn-warning btn-sm">Modificar</button>
+                <button hx-post="/users/delete/{{.ID}}" class="btn btn-danger btn-sm">Eliminar</button>
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>

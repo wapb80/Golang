@@ -1,0 +1,5 @@
+<form hx-post="/clubs/edit/{{.ID}}" class="form-group" method="POST">
+    <label for="name">Nombre del Club:</label>
+    <input type="text" class="form-control" id="name" name="name" value="{{.Name}}" required>
+    <button type="submit" class="btn btn-primary mt-3">Guardar Cambios</button>
+</form>

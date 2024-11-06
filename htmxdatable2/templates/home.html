@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+<!--     
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script> -->
+    <script src="https://unpkg.com/htmx.org@2.0.3/dist/htmx.js" integrity="sha384-BBDmZzVt6vjz5YbQqZPtFZW82o8QotoM7RUp5xOxV3nSJ8u2pSdtzFAbGKzTlKtg" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div class="container-fluid">
+    <header class="d-flex justify-content-between align-items-center p-3 bg-primary text-white">
+        <h1>Mi Panel de Administración</h1>
+        <nav class="navbar navbar-expand-sm navbar-light bg-primary">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link text-white" href="#">Juan Pérez</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="#">Perfil</a></li>
+                <li class="nav-item"><a class="nav-link text-white" href="#">Cerrar Sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="row">
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" onclick="loadTable()">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <button class="btn btn-link nav-link" 
+                            hx-get="/users/create" 
+                            hx-target="#modals-here" 
+                            hx-swap="innerHTML"
+                            hx-on="htmx:afterSwap: showCreateUserModal()">
+                        Crear Usuario
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button id ="aca" class="btn btn-link nav-link" 
+                            hx-get="/clubs/create" 
+                            hx-target="#modals-here"
+                            hx-trigger="click"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modals-here">
+                            
+                        Crear Club
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="btn btn-link nav-link" 
+                            hx-get="/users" 
+                            hx-target="#data-table-container" 
+                            hx-swap="innerHTML">
+                        Listar Usuarios
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="btn btn-link nav-link" 
+                            hx-get="/clubs" 
+                            hx-target="#data-table-container" 
+                            hx-swap="innerHTML">
+                        Listar Clubes
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Configuración</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Ayuda</a>
+                </li>
+            </ul>
+        
+        </nav>
+        
+
+        <main class="col-md-9 ml-sm-auto col-lg-10 px-4">
+            <h2>Bienvenido al Panel</h2>
+            <div id="data-table-container"></div>
+            <!-- aca esta el modal -->
+                <div id="modals-here"
+                    class="modal modal-blur fade"
+                    style="display: none"
+                    aria-hidden="false"
+                    tabindex="-1">
+                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                        
+                    </div>
+                </div>
+            
+        </main>
+    </div>
+
+    <!-- Modal para crear usuario -->
+    <div id="modal-create-user" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Crear Usuario</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-user-form">
+                        <div class="form-group">
+                            <label for="user-name">Nombre:</label>
+                            <input type="text" id="user-name" name="user-name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-email">Email:</label>
+                            <input type="email" id="user-email" name="user-email" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Crear Usuario</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <footer class="footer bg-primary text-white text-center p-3">
+        &copy; 2024 Mi Empresa
+    </footer>
+</div>
+ <!-- <script>
+    document.addEventListener("htmx:afterRequest", (event) => {
+        // Verifica que es la solicitud del formulario de creación de club
+        if (event.target.id === "create-club-form") {
+            cerrarModal();  // Cierra el modal
+            window.location.href = "/"; // Redirecciona a otra página
+        }
+    });
+
+    function cerrarModal() {
+        const modal = document.getElementById("create-club-modal");
+        if (modal) {
+            modal.style.display = "none"; // Esconde el modal
+        }
+    }
+</script>  -->
+<!-- <script>
+// Funciones para mostrar los modales
+function showCreateUserModal() {
+    $('#modal-create-user').modal('show');
+}
+
+function showCreateClubModal() {
+    $('#modal-create-club').modal('show');
+}
+
+// Manejar el envío del formulario de creación de usuario
+$('#create-user-form').on('submit', function(event) {
+    event.preventDefault();
+    const name = $('#user-name').val();
+    const email = $('#user-email').val();
+
+    $.post('/users/create', { name: name, email: email }, function() {
+        alert('Usuario creado.');
+        $('#modal-create-user').modal('hide');
+        loadTable(); // Recargar la tabla después de crear
+    });
+});
+
+// Manejar el envío del formulario de creación de club
+$('#create-club-form').on('submit', function(event) {
+    event.preventDefault();
+    const name = $('#club-name').val();
+
+    $.post('/clubs/create', { name: name }, function() {
+        alert('Club creado.');
+        $('#modal-create-club').modal('hide');
+        loadTable(); // Recargar la tabla después de crear
+    });
+});
+
+// Función para cargar la tabla (ajustar según tus necesidades)
+function loadTable() {
+    // Lógica para cargar la tabla de usuarios o clubes
+}
+
+</script> -->
+
+</body>
+<style>
+    /* styles.css */
+.sidebar .nav-link {
+    color: #007bff; /* Color de texto */
+}
+
+.sidebar .nav-link:hover {
+    background-color: #e7f1ff; /* Color de fondo en hover */
+}
+
+.sidebar .btn {
+    width: 100%; /* Botones de ancho completo */
+    text-align: left; /* Alinear texto a la izquierda */
+    border: none; /* Sin bordes para un estilo más limpio */
+}
+
+</style>
+</html>
