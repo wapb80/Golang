@@ -46,10 +46,61 @@ func InitDB() *sql.DB {
 		 -- FOREIGN KEY (club_deportivo_id) REFERENCES ClubDeportivo(id) ON DELETE SET NULL -- o ON DELETE CASCADE dependiendo del comportamiento deseado
 	);
 
+	CREATE TABLE IF NOT EXISTS Comuna (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			nombre TEXT NOT NULL
+		);
+
+
+	CREATE TABLE IF NOT EXISTS Series (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			nombre TEXT NOT NULL
+	);
+
 
 
 	`
+	// delete from 'Comuna';
+	// update sqlite_sequence set seq=0 where name='comuna';
 
+	// INSERT INTO Series (nombre) VALUES
+	// 	('Infantil'),
+	// 	('Adulta'),
+	// 	('Senior');
+
+	// 	INSERT INTO Comuna (nombre) VALUES
+	// 	('Cerrillos'),
+	// 	('Cerro Navia'),
+	// 	('Conchalí'),
+	// 	('El Bosque'),
+	// 	('Estación Central'),
+	// 	('Huechuraba'),
+	// 	('Independencia'),
+	// 	('La Cisterna'),
+	// 	('La Florida'),
+	// 	('La Granja'),
+	// 	('La Pintana'),
+	// 	('La Reina'),
+	// 	('Las Condes'),
+	// 	('Lo Barnechea'),
+	// 	('Lo Espejo'),
+	// 	('Lo Prado'),
+	// 	('Macul'),
+	// 	('Maipú'),
+	// 	('Ñuñoa'),
+	// 	('Pedro Aguirre Cerda'),
+	// 	('Peñalolén'),
+	// 	('Providencia'),
+	// 	('Pudahuel'),
+	// 	('Quilicura'),
+	// 	('Quinta Normal'),
+	// 	('Recoleta'),
+	// 	('Renca'),
+	// 	('San Joaquín'),
+	// 	('San Miguel'),
+	// 	('San Ramón'),
+	// 	('Santiago'),
+	// 	('Vitacura');
 	// INSERT INTO ClubDeportivo (nombre, comuna, direccion, representante) VALUES
 	// ('Deportivo Los Andes', 'Providencia', 'Calle Los Leones 456', 'María López'),
 	// ('Club Futuro Estrella', 'La Florida', 'Av. La Florida 789', 'Carlos Rojas'),

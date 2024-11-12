@@ -1,0 +1,30 @@
+<form  id="edit-form" hx-post="/users/edit/{{.ID}}" class="form-group">
+    <label for="name">Nombre del Usuario:</label>
+    <input type="text" class="form-control" id="name" name="name" value="{{.Name}}" required>
+    <label for="email">Email:</label>
+    <input type="email" class="form-control" id="email" name="email" value="{{ if .Email.Valid }}{{ .Email.String }}{{ else }}N/A{{ end }}" required>
+    <button type="button" onclick="confirmarEnvio()" class="btn btn-primary mt-3">Guardar Cambios</button>
+    <button hx-trigger="/listUsers" class="btn btn-danger mt-3">Cancelar</button>
+   
+</form>
+
+
+<script>
+ function confirmarEnvio() {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "¿Deseas modificar este usuario?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, modificar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Envía el formulario usando HTMX
+                htmx.trigger(htmx.find("#edit-form"), "submit");
+            }
+        });
+    }
+</script>

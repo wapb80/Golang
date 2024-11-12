@@ -31,6 +31,22 @@ type Club struct {
 	ID     int
 	Nombre string
 }
+type Comuna struct {
+	ID     int
+	Nombre string
+}
+type Serie struct {
+	ID     int
+	Nombre string
+}
+type PageData struct {
+	Clubs   []Club
+	Comunas []Comuna
+	Series  []Serie
+	//  UserName  string
+	// IsAdmin   bool
+	// Agrega más campos si es necesario
+}
 
 var db *sql.DB
 var templates *template.Template
@@ -194,7 +210,6 @@ func FindUserHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Database query error:", err)
 		return
 	}
-
 	// Responde con el resultado en formato JSON
 	response := map[string]bool{"exists": exists}
 	w.Header().Set("Content-Type", "application/json")
@@ -232,8 +247,57 @@ func templateCreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		Clubes = append(Clubes, Club)
 	}
+	//////////////////////////////////////////////////////////////////////////////
+	rowcomuna, err := db.Query("SELECT nombre FROM Comuna")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rowcomuna.Close()
+
+	/*itera sobre los resultados de una consulta a la base de datos y extrae información de cada fila.
+	for rows.Next():
+
+	Esta es la estructura básica de un bucle for en Go, en el que se llama al método Next() de rows para iterar sobre los resultados de la consulta.
+	rows.Next() devuelve true mientras haya más filas en el conjunto de resultados. Cuando se alcanza el final, devuelve false, y el bucle termina.
+	*/
+	var Comunas []Comuna
+	for rowcomuna.Next() {
+		var Comuna Comuna //crea una instancia de Comuna para almacenar los datos de cada fila.
+		if err := rowcomuna.Scan(&Comuna.Nombre); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Comunas = append(Comunas, Comuna)
+	}
+	//////////////////////////////////////////////////////////////////////////////
+	rowseries, err := db.Query("SELECT nombre FROM Series")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rowseries.Close()
+
+	var Series []Serie
+	for rowseries.Next() {
+		var Serie Serie //crea una instancia de Comuna para almacenar los datos de cada fila.
+		if err := rowseries.Scan(&Serie.Nombre); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Series = append(Series, Serie)
+	}
+	//////////////////////////////////////////////////////////////////////////////
+	pageData := PageData{
+		Clubs:   Clubes,
+		Comunas: Comunas,
+		Series:  Series,
+		// UserName: "Juan Perez",
+		// IsAdmin:  true,
+	}
 	// println(len(Clubes))
-	templates.ExecuteTemplate(w, "create_user2.html", Clubes)
+
+	templates.ExecuteTemplate(w, "create_user2.html", pageData)
 }
 
 // func insertClubHandler(w http.ResponseWriter, r *http.Request) {

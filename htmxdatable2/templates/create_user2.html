@@ -37,44 +37,14 @@
         </div>
     </div>
     <div class="form-group">
-        <label for="comuna">Comuna:</label>
+        <label for= "serie">Comuna:</label>
         <select class="form-control" id="comuna" name="comuna" required>
-            <option value="">Seleccione una comuna</option>
-            <option value="Cerrillos">Cerrillos</option>
-            <option value="Cerro Navia">Cerro Navia</option>
-            <option value="Conchalí">Conchalí</option>
-            <option value="El Bosque">El Bosque</option>
-            <option value="Estación Central">Estación Central</option>
-            <option value="Huechuraba">Huechuraba</option>
-            <option value="Independencia">Independencia</option>
-            <option value="La Cisterna">La Cisterna</option>
-            <option value="La Florida">La Florida</option>
-            <option value="La Granja">La Granja</option>
-            <option value="La Pintana">La Pintana</option>
-            <option value="La Reina">La Reina</option>
-            <option value="Las Condes">Las Condes</option>
-            <option value="Lo Barnechea">Lo Barnechea</option>
-            <option value="Lo Espejo" selected>Lo Espejo</option>
-            <option value="Lo Prado">Lo Prado</option>
-            <option value="Macul">Macul</option>
-            <option value="Maipú">Maipú</option>
-            <option value="Ñuñoa">Ñuñoa</option>
-            <option value="Pedro Aguirre Cerda">Pedro Aguirre Cerda</option>
-            <option value="Peñalolén">Peñalolén</option>
-            <option value="Providencia">Providencia</option>
-            <option value="Pudahuel">Pudahuel</option>
-            <option value="Quilicura">Quilicura</option>
-            <option value="Quinta Normal">Quinta Normal</option>
-            <option value="Recoleta">Recoleta</option>
-            <option value="Renca">Renca</option>
-            <option value="San Joaquín">San Joaquín</option>
-            <option value="San Miguel">San Miguel</option>
-            <option value="San Ramón">San Ramón</option>
-            <option value="Santiago">Santiago</option>
-            <option value="Vitacura">Vitacura</option>
+            <option value ="" selected >Selecciona Comuna:</option>
+            {{ range .Comunas }}
+             <option value="{{ .Nombre }}">{{ .Nombre }}</option> 
+            {{ end }}
         </select>
-    </div>
-    
+    </div>  
     <div class="form-group">
         <label for="direccion">Dirección:</label>
         <input type="text" class="form-control" id="direccion" name="direccion" required>
@@ -83,29 +53,20 @@
         <label for= "serie">Club Juega:</label>
         <select class= "form-control" id="club_juega" name="club_juega">
             <option value ="" selected >Selecciona Club en el que Juega:</option>
-            {{ range . }}
+            {{ range .Clubs }}
              <option value="{{ .Nombre }}">{{ .Nombre }}</option> 
             {{ end }}
         </select>
-    </div>   
+    </div>
     <div class="form-group">
         <label for= "serie">Serie en la que Juega:</label>
         <select class= "form-control" id="serie_juega" name="serie_juega">
             <option value ="" selected >Selecciona Serie en la que Juega:</option>
-            <option disabled>──────────</option>
-            <option value="1infantil">Primera Infantil</option>
-            <option value="2infantil">Segunda Infantil</option>
-            <option value="3infantil">Tercera Infantil</option>
-            <option disabled>──────────</option>
-            <option value="1adulta">Primera Adulta</option>
-            <option value="1adulta">Segunda Adulta</option>
-            <option value="1adulta">Tercera Adulta</option>
-            <option disabled>──────────</option>
-            <option value="1senior">Premera Senior</option>
-            <option value="2senior">Segunda Senior</option>
-            <option value="3senior">TerceraSenior</option>
-          </select>
-    </div>
+            {{ range .Series }}
+             <option value="{{ .Nombre }}">{{ .Nombre }}</option> 
+            {{ end }}
+        </select>
+    </div>     
     <div class="form-group">
         <label for="historial_deportivo">Historial Deportivo:</label>
         <textarea maxlength="2000" class="form-control" id="historial" name="historial"></textarea>

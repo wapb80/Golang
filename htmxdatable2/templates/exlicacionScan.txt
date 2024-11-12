@@ -1,0 +1,40 @@
+
+for rows.Next() {
+    var Comuna Comuna
+    if err := rowcomuna.Scan(&Comuna.Nombre); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    Comunas = append(Comunas, Comuna)
+}
+Explicación de cada parte
+for rows.Next():
+
+Esta es la estructura básica de un bucle for en Go, en el que se llama al método Next() de rows para iterar sobre los resultados de la consulta.
+rows.Next() devuelve true mientras haya más filas en el conjunto de resultados. Cuando se alcanza el final, devuelve false, y el bucle termina.
+var Comuna Comuna:
+
+Aquí se declara una variable Comuna de tipo Comuna. Suponiendo que Comuna es una estructura (struct) definida en otro lugar, esta línea crea una instancia de Comuna para almacenar los datos de cada fila.
+if err := rowcomuna.Scan(&Comuna.Nombre); err != nil:
+
+La función Scan extrae los valores de la fila actual y los almacena en las variables proporcionadas como argumentos.
+En este caso, &Comuna.Nombre es un puntero al campo Nombre dentro de la variable Comuna. Esto significa que el valor del nombre de la comuna en la fila actual se almacenará en Comuna.Nombre.
+Scan devuelve un valor de error (err). Si ocurre un error en la extracción de datos, err no será nil, y se ejecutará el bloque de if para manejar el error.
+http.Error(w, err.Error(), http.StatusInternalServerError):
+
+Si err no es nil, entonces hubo un error al escanear los datos, y el código envía una respuesta HTTP con un estado de error (500 Internal Server Error).
+err.Error() convierte el mensaje de error en una cadena para enviarla en la respuesta, lo cual es útil para depuración.
+return:
+
+Al encontrar un error, se sale de la función inmediatamente con return, y no se ejecutan las líneas siguientes en el caso de un error.
+Comunas = append(Comunas, Comuna):
+
+Si no hubo error al escanear los datos de la fila, Comuna se agrega al slice Comunas usando append.
+Comunas es un slice (o lista) que almacena todas las instancias de Comuna, representando el conjunto completo de filas que se están extrayendo.
+Resumen del Flujo
+El bucle for recorre cada fila en rows.
+Cada fila se escanea para extraer el valor de Nombre, que se almacena en Comuna.Nombre.
+Si hay un error en Scan, se envía una respuesta HTTP de error y se detiene la función.
+Si no hay error, la instancia Comuna se agrega al slice Comunas.
+Al final del bucle, Comunas contendrá todos los resultados de la consulta, listos para ser procesados o enviados a una plantilla.
+Este es un patrón común en Go para manejar resultados de consultas a bases de datos, verificando errores en cada fila antes de procesar el siguiente dato.
