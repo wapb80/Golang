@@ -1,16 +1,29 @@
 <table id="example" class="table table-striped table-bordered" style="width:100%">
     <thead>
         <tr>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Acciones</th>
+            <th>Foto</th>
+            <th>Rut</th>
+            <th>Nombres</th>
+            <th>Apellido Paterno</th>
+            <th>Apellido Materno</th>
+            <th>Club </th>
+            <th>Serie</th>
+            <th>Edad</th>  
+            <th>Acciones</th>                                              
         </tr>
     </thead>
     <tbody>
         {{ range . }}
         <tr>
-            <td>{{ .Name }}</td>
-            <td>{{ if .Email.Valid }}{{ .Email.String }}{{ else }}N/A{{ end }}</td>
+            
+            <td><img src="/static/{{ .Foto }}.jpg" width="50"></td>
+            <td>{{ .Rut }}-{{ .Dv}}</td>
+            <td>{{ .Nombres}}</td>
+            <td>{{ .Apellido_paterno }}</td>
+            <td>{{ .Apellido_materno }}</td>
+            <td>{{ .Club_juega }}</td>
+            <td>{{ .Serie_juega }}</td>
+            <td>{{ .Edad }}</td>
             <td>
                 <!-- puedes ocupar hx-Post para que sea por POST -->
                 <button hx-get="/users/edit/{{ .ID }}"  hx-target="#content" data-bs-toggle="modal" class="btn btn-warning btn-sm">Modificar</button>
@@ -24,4 +37,5 @@
     $(document).ready(function() {
         $('#example').DataTable();
     });
+    // <!-- <td>{{ if .Email.Valid }}{{ .Email.String }}{{ else }}N/A{{ end }}</td> -->    
 </script>

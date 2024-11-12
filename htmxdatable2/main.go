@@ -3,6 +3,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -12,10 +13,18 @@ import (
 	"time"
 )
 
-type User struct {
-	ID    int
-	Name  string
-	Email sql.NullString
+type Jugador struct {
+	ID               int
+	Mail             sql.NullString
+	Rut              int
+	Dv               string
+	Nombres          string
+	Apellido_paterno string
+	Apellido_materno string
+	Club_juega       string
+	Serie_juega      string
+	Foto             string
+	Edad             int
 }
 
 type Club struct {
@@ -37,6 +46,8 @@ func main() {
 	defer db.Close()
 
 	templates = template.Must(template.ParseGlob("templates/*.html"))
+	// Servir el directorio de imágenes
+	r.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(uploadPath))))
 
 	r.HandleFunc("GET /", HomeHandler)
 	// http.HandleFunc("/listClubs", listClubesHandler)
@@ -48,6 +59,7 @@ func main() {
 	// http.HandleFunc("/clubs/create", CreateClubHandler)
 	// http.HandleFunc("/clubs/insert", insertClubHandler)
 	r.HandleFunc("GET /user/delete/{id}", DeleteUserHandler)
+	r.HandleFunc("GET /user/find/{id}", FindUserHandler)
 	// http.HandleFunc("/clubs/delete/", DeleteClubHandler)
 	r.HandleFunc("GET /users/edit/{id}", EditUserHandler)
 	r.HandleFunc("POST /users/edit/{id}", EditUserHandlerPost)
@@ -73,24 +85,24 @@ func main() {
 // }
 
 func listUsersHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, name, email FROM users")
+	rows, err := db.Query("SELECT id,rut,dv,nombres,apellido_paterno,apellido_materno,club_juega,foto,serie_juega,edad FROM jugador")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	var users []User
+	var Jugadores []Jugador
 	for rows.Next() {
-		var user User
-		if err := rows.Scan(&user.ID, &user.Name, &user.Email); err != nil {
+		var jugador Jugador
+		if err := rows.Scan(&jugador.ID, &jugador.Rut, &jugador.Dv, &jugador.Nombres, &jugador.Apellido_paterno, &jugador.Apellido_materno, &jugador.Club_juega, &jugador.Foto, &jugador.Serie_juega, &jugador.Edad); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		users = append(users, user)
+		Jugadores = append(Jugadores, jugador)
 	}
 	// println(len(users))
-	templates.ExecuteTemplate(w, "user_table.html", users)
+	templates.ExecuteTemplate(w, "user_table.html", Jugadores)
 }
 
 // func ListClubsHandler(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +182,23 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	//templates.ExecuteTemplate(w, "usuarioCreado.html", nil)
 	// http.Redirect(w, r, "/", http.StatusSeeOther)
 	//listUsersHandler(w, r)
+}
+func FindUserHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	// println("select rut FROM jugador WHERE activo=1 and  rut = ?", id)
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM jugador WHERE activo=1 and  rut = ?)", id).Scan(&exists)
+	// err := db.QueryRow("select rut FROM jugador WHERE activo=1 and  rut = ?", id).Scan(&exists)
+	if err != nil {
+		http.Error(w, "Error querying the database", http.StatusInternalServerError)
+		log.Println("Database query error:", err)
+		return
+	}
+
+	// Responde con el resultado en formato JSON
+	response := map[string]bool{"exists": exists}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -261,8 +290,8 @@ func EditUserHandler(w http.ResponseWriter, r *http.Request) {
 	// 	id := r.URL.Path[len("/clubs/edit/"):]
 	// Obtener datos actuales del usuario
 	row := db.QueryRow("SELECT id, name, email FROM users WHERE id = ?", id)
-	var user User
-	err := row.Scan(&user.ID, &user.Name, &user.Email)
+	var user Jugador
+	err := row.Scan(&user.ID, &user.Nombres, &user.Apellido_paterno)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

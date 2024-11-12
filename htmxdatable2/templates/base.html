@@ -46,30 +46,68 @@
             rutInput.value = rut;
         }
 
+        function buscaRut(rut){
+        var url = `/user/find/${rut}`
+                                fetch(url)
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Network response was not ok');
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    // Supongamos que la API devuelve un objeto con una propiedad "exists"
+                                    if (data.exists) {
+                                        const rutInput = document.getElementById("rut").value;
+                                        const [numero, digitoVerificador] = rutInput.split('-');
+                                        document.getElementById("rut").value=numero;
+                                        document.getElementById("rut").focus();
+                                        console.log("El usuario existe.");
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Rut Ya Existe en la Base de datos',
+                                            text: 'Favor Verifica el Rut',
+                                        });
+                                        return false
+                                    } 
+                                })
+                                .catch(error => {
+                                    console.error('Hubo un problema con la solicitud Fetch:', error);
+                                });
+
+
+        }
+
+
         // Función para capturar el "Enter" y validar el dígito verificador
         function validarEnter(event) {
-            if (event.key === "Enter" || event.type === "blur" ) {
+            if ( event.type === "blur" || event.type === "focus"  ) {
                 const rutInput = document.getElementById("rut").value;
                 const [numero, digitoVerificador] = rutInput.split('-');
-
+                console.log(event.type)
                 // Validar sólo si el número y el dígito verificador están presentes
                 if (numero && digitoVerificador) {
                     if (validarRUT(numero.replace(/\./g, ""), digitoVerificador.toUpperCase())) {
                         // document.getElementById("resultado").innerText = "RUT válido";
                         document.getElementById("rut2").value=numero.replace(/\./g, "")
                         document.getElementById("dv").value=digitoVerificador;
-                        document.getElementById("nombres").focus();
+                        //document.getElementById("nombres").focus();
+                        buscaRut(numero.replace(/\./g, ""))
                     } else {
+                        //document.getElementById("rut").value = "1234";
+                        document.getElementById("rut").focus();
                         Swal.fire({
                             icon: 'error',
                             title: 'Rut Invalido',
                             text: 'Favor Verifica el Rut',
                         });
+
+                        //event.stopPropagation();
                         return;
                         // document.getElementById("resultado").innerText = "RUT inválido";
                     }
                 } else {
-                    document.getElementById("resultado").innerText = "RUT incompleto";
+                    //document.getElementById("resultado").innerText = "RUT incompleto";
                 }
             }
         }
@@ -95,9 +133,25 @@
             return digitoVerificador === dvCalculado.toString();
         }
 
+
+        function calcularEdad(fechaNacimiento) {
+            const hoy = new Date();
+            const nacimiento = new Date(fechaNacimiento);
+            let edad = hoy.getFullYear() - nacimiento.getFullYear();
+            const mes = hoy.getMonth() - nacimiento.getMonth();
+
+            // Ajustar la edad si el cumpleaños aún no ha ocurrido este año
+            if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+                edad--;
+            }
+            return edad;
+        }
+
         function confirmarEnvio() {
                 // Obtiene los elementos del formulario
+
                 const rut = document.getElementById('rut').value.trim();
+
                 const nombres = document.getElementById('nombres').value.trim();
                 const apellido_paterno = document.getElementById('apellido_paterno').value.trim();
                 const apellido_materno = document.getElementById('apellido_materno').value.trim();
@@ -124,6 +178,19 @@
                         
                 }else{
                 
+                    /* VALIDAR FECHA NACIMIENTO CON EDAD*/
+                    const edadCalculada = calcularEdad(fecha_nacimiento);
+
+                    if (parseInt(edad) !== edadCalculada) {
+                                // Muestra un mensaje específico para el campo vacío
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: `La edad ingresada (${edad}) no coincide con la fecha de nacimiento.`,
+                                    text: `Por favor, Modificala.`
+                                });
+                                return false; // Detener la función si falta un campo
+
+                    }
 
                     const campos = {
                     rut:"Rut",
@@ -164,7 +231,7 @@
                 //             alert("El Digito Verificador debe ser un dígito del 0 al 9 o la letra K/k.");
                 //             document.getElementById("dv").focus(); 
                 // }
-            // Verifica que todos los campos obligatorios estén completos
+             // Verifica que todos los campos obligatorios estén completos
                 // if ( !nombres|| !apellido_materno|| !apellido_paterno || !email || !edad || !fecha_nacimiento || !comuna || !direccion || !serie_juega || !club_juega || !historial_deportivo || !foto ) {
                 //     Swal.fire({
                 //         icon: 'error',
