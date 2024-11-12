@@ -3,9 +3,13 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"time"
 )
 
 type User struct {
@@ -15,30 +19,35 @@ type User struct {
 }
 
 type Club struct {
-	ID   int
-	Name string
+	ID     int
+	Nombre string
 }
 
 var db *sql.DB
 var templates *template.Template
 
+const uploadPath = "./uploads/" // Directorio donde se guardarán las imágenes
+
 func main() {
+	// Crear el directorio de subida si no existe
+	os.MkdirAll(uploadPath, os.ModePerm)
+
 	r := http.NewServeMux()
 	db = InitDB()
 	defer db.Close()
 
 	templates = template.Must(template.ParseGlob("templates/*.html"))
 
-	r.HandleFunc("/", HomeHandler)
+	r.HandleFunc("GET /", HomeHandler)
 	// http.HandleFunc("/listClubs", listClubesHandler)
-	r.HandleFunc("/listUsers", listUsersHandler)
-	r.HandleFunc("/createUser", templateCreateUserHandler)
+	r.HandleFunc("GET /listUsers", listUsersHandler)
+	r.HandleFunc("GET /createUser", templateCreateUserHandler)
 	// http.HandleFunc("/users", ListUsersHandler)
 	// http.HandleFunc("/clubs", ListClubsHandler)
-	r.HandleFunc("/users/create", CreateUserHandler)
+	r.HandleFunc("POST /users/create", CreateUserHandler)
 	// http.HandleFunc("/clubs/create", CreateClubHandler)
 	// http.HandleFunc("/clubs/insert", insertClubHandler)
-	r.HandleFunc("/user/delete/{id}", DeleteUserHandler)
+	r.HandleFunc("GET /user/delete/{id}", DeleteUserHandler)
 	// http.HandleFunc("/clubs/delete/", DeleteClubHandler)
 	r.HandleFunc("GET /users/edit/{id}", EditUserHandler)
 	r.HandleFunc("POST /users/edit/{id}", EditUserHandlerPost)
@@ -106,15 +115,61 @@ func listUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 // // Crear USER
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+	// Parsear el formulario multipart
 
-	name := r.FormValue("name")
-	email := r.FormValue("email")
-	_, err := db.Exec("INSERT INTO users (name, email) VALUES (?, ?)", name, email)
+	err := r.ParseMultipartForm(10 << 20) // Limitar a 10 MB
+	if err != nil {
+		http.Error(w, "Error al parsear el formulario: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	file, _, err := r.FormFile("foto")
+	if err != nil {
+		http.Error(w, "Error al obtener el archivo: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	//********************************************************************** Cambiar nombre de la imagen
+	// Obtener la fecha y hora actuales
+	now := time.Now()
+	// Formatear la fecha y hora en el formato deseado: día mes año hora minutos sin separadores
+	formattedDateTime := now.Format("020120061504")
+
+	// Definir un entero que deseas concatenar
+	number := r.FormValue("rut2")
+
+	// Concatenar la fecha y hora con el entero (convertido a cadena)
+	nombreFoto := fmt.Sprintf("%s_%s", number, formattedDateTime)
+
+	//*********************************************************************************** Cambiar nombre de la imagen
+	out, err := os.Create(uploadPath + nombreFoto + ".jpg") // Cambia el nombre según sea necesario
+	if err != nil {
+		http.Error(w, "Error al crear el archivo: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, file); err != nil {
+		http.Error(w, "Error al guardar el archivo: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// fmt.Fprintf(w, "Imagen subida exitosamente: %s", uploadPath+"uploaded_image.jpg")
+	// esto esta bien sin imagenes
+	// name := r.FormValue("name")
+	// email := r.FormValue("email")
+	// _, err = db.Exec("INSERT INTO users (name, email) VALUES (?, ?)", name, email)
+
+	_, err = db.Exec("INSERT INTO jugador (rut,dv,nombres,apellido_paterno,apellido_materno,mail,edad,fecha_nacimiento,comuna,direccion,club_juega,serie_juega,historial,activo,foto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?)", r.FormValue("rut2"), r.FormValue("dv"), r.FormValue("nombres"), r.FormValue("apellido_paterno"), r.FormValue("apellido_materno"), r.FormValue("email"), r.FormValue("edad"), r.FormValue("fecha_nacimiento"), r.FormValue("comuna"), r.FormValue("direccion"), r.FormValue("club_juega"), r.FormValue("serie_juega"), r.FormValue("historial"), 1, nombreFoto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/listUsers", http.StatusSeeOther)
+
+	fmt.Fprintf(w, "Usuario Ingeresado exitosamente ")
+	//templates.ExecuteTemplate(w, "usuarioCreado.html", nil)
+	// http.Redirect(w, r, "/", http.StatusSeeOther)
+	//listUsersHandler(w, r)
 }
 
 func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +187,24 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func templateCreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "create_user.html", nil)
+	rows, err := db.Query("SELECT nombre FROM ClubDeportivo")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var Clubes []Club
+	for rows.Next() {
+		var Club Club
+		if err := rows.Scan(&Club.Nombre); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Clubes = append(Clubes, Club)
+	}
+	// println(len(Clubes))
+	templates.ExecuteTemplate(w, "create_user2.html", Clubes)
 }
 
 // func insertClubHandler(w http.ResponseWriter, r *http.Request) {

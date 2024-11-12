@@ -1,0 +1,102 @@
+<form  id="edit-form" hx-target="#content" hx-post="/users/create" method="POST" class="form-group" enctype="multipart/form-data">
+    <label for="name">Nombre del Usuario:</label>
+    <input type="text" class="form-control" id="name" name="name"  required>
+    <label for="email">Email:</label>
+    <input type="email" class="form-control" id="email" name="email"  required>
+    <button type="button" onclick="confirmarEnvio()" class="btn btn-primary mt-3">Guardar</button>
+    <button hx-trigger="/listUsers" class="btn btn-danger mt-3">Cancelar</button>
+    <!-- <button hx-trigger="/listUsers" class="btn btn-danger mt-3">Cancelar</button> -->
+   
+    <label for="foto">Foto del Usuario:</label>
+    <input type="file" class="form-control" id="foto" name="foto" required>
+    <button type="submit" class="btn btn-primary mt-3">Guardar</button>
+</form>
+
+<script>
+    document.getElementById('edit-form').addEventListener('submit', function(event) {
+        if (!this.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+            alert("Por favor completa todos los campos requeridos.");
+        } else {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "¿Deseas guardar este usuario?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.submit(); // Enviar el formulario
+                    //htmx.trigger(htmx.find("#edit-form"), "submit");
+
+                }
+            });
+        }
+    });
+    </script>
+<!--     
+<script>
+    function confirmarEnvio() {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "¿Deseas Guardar este usuario?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.getElementById('edit-form');
+                const formData = new FormData(form); // Crear un objeto FormData con los datos del formulario
+                
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    // No establezcas manualmente el Content-Type; el navegador lo hará automáticamente
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error en la respuesta del servidor');
+                    }
+                    return response.text(); // O response.json() si esperas un JSON
+                })
+                .then(data => {
+                    document.getElementById('content').innerHTML = data; // Muestra la respuesta en el div
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('content').innerHTML = 'Error al subir la imagen.';
+                });
+            }
+        });
+    }
+    </script> -->
+
+
+<!-- 
+<script>
+  function confirmarEnvio() {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "¿Deseas Guardar este usuario?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Envía el formulario usando HTMX
+                htmx.trigger(htmx.find("#edit-form"), "submit");
+            }
+        });
+    }
+</script> -->
+<!-- ********************************************************** -->

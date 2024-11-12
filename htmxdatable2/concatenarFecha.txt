@@ -1,0 +1,51 @@
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// Obtener la fecha y hora actuales
+	now := time.Now()
+
+	// Formatear la fecha en el formato deseado: día-mes-año
+	formattedDate := now.Format("02-01-2006")
+
+	// Definir un entero que deseas concatenar
+	number := 42
+
+	// Concatenar la fecha con el entero (convertido a cadena)
+	result := fmt.Sprintf("%s-%d", formattedDate, number)
+
+	// Imprimir el resultado
+	fmt.Println("Resultado:", result)
+}
+
+********************************************************************************************
+func main() {
+    // Obtener la fecha y hora actuales
+    now := time.Now()
+
+    // Formatear la fecha y hora en el formato deseado: día-mes-año hora:minutos
+    formattedDateTime := now.Format("02-01-2006 15:04")
+
+    // Definir un entero que deseas concatenar
+    number := 42
+
+    // Concatenar la fecha y hora con el entero (convertido a cadena)
+    result := fmt.Sprintf("%s-%d", formattedDateTime, number)
+
+    // Imprimir el resultado
+    fmt.Println("Resultado:", result)
+}
+
+-**************************************************************
+// Formatear la fecha y hora en el formato deseado: día mes año hora minutos sin separadores
+    formattedDateTime := now.Format("02012006 1504")
+
+    // Definir un entero que deseas concatenar
+    number := 42
+
+    // Concatenar la fecha y hora con el entero (convertido a cadena)
+    result := fmt.Sprintf("%s%d", formattedDateTime, number)
