@@ -25,6 +25,11 @@ type Jugador struct {
 	Serie_juega      string
 	Foto             string
 	Edad             int
+	Fecha_nacimiento time.Time
+	Comuna           string
+	Direccion        string
+	Historial        string
+	Activo           int
 }
 
 type Club struct {
@@ -39,13 +44,38 @@ type Serie struct {
 	ID     int
 	Nombre string
 }
+
+// type PageData struct {
+// 	Clubs        []Club
+// 	Comunas      []Comuna
+// 	Series       []Serie
+// 	SelectClub   string
+// 	SelectComuna string
+// 	SelectSerie  string
+// 	Jugadores    []Jugador
+// 	//  UserName  string
+// 	// IsAdmin   bool
+// 	// Agrega más campos si es necesario
+// }
+
 type PageData struct {
-	Clubs   []Club
-	Comunas []Comuna
-	Series  []Serie
+	Clubs        []Club
+	Comunas      []Comuna
+	Series       []Serie
+	SelectClub   string
+	SelectComuna string
+	SelectSerie  string
+	Jugadores    Jugador
 	//  UserName  string
 	// IsAdmin   bool
 	// Agrega más campos si es necesario
+}
+
+// Función para formatear fechas
+func formatFecha(t time.Time) string {
+	// return t.Format("2006/01/02")
+	return t.UTC().Format("2006-01-02")
+
 }
 
 var db *sql.DB
@@ -61,7 +91,15 @@ func main() {
 	db = InitDB()
 	defer db.Close()
 
-	templates = template.Must(template.ParseGlob("templates/*.html"))
+	// Define el FuncMap con las funciones personalizadas
+	funcMap := template.FuncMap{
+		"formatFecha": formatFecha,
+	}
+
+	// Usa New y Funcs para aplicar el FuncMap antes de cargar las plantillas
+	templates = template.Must(template.New("").Funcs(funcMap).ParseGlob("templates/*.html"))
+
+	//templates = template.Must(template.ParseGlob("templates/*.html"))
 	// Servir el directorio de imágenes
 	r.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(uploadPath))))
 
@@ -350,17 +388,92 @@ func templateCreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func EditUserHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	// if r.Method == http.MethodPost {
-	// 	id := r.URL.Path[len("/clubs/edit/"):]
-	// Obtener datos actuales del usuario
-	row := db.QueryRow("SELECT id, name, email FROM users WHERE id = ?", id)
+	var clubNombre string
+	var serienombre string
+	var comunanombre string
+	//var Users []Jugador
+	row := db.QueryRow("SELECT rut,dv,nombres,apellido_paterno,apellido_materno,mail,edad,fecha_nacimiento,comuna,direccion,club_juega,serie_juega,historial,activo,foto FROM jugador WHERE id = ?", id)
 	var user Jugador
-	err := row.Scan(&user.ID, &user.Nombres, &user.Apellido_paterno)
+	err := row.Scan(&user.Rut, &user.Dv, &user.Nombres, &user.Apellido_paterno, &user.Apellido_materno, &user.Mail, &user.Edad, &user.Fecha_nacimiento, &user.Comuna, &user.Direccion, &user.Club_juega, &user.Serie_juega, &user.Historial, &user.Activo, &user.Foto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	templates.ExecuteTemplate(w, "edit_user.html", user)
+	//	Users = append(Users, user)
+	// fmt.Printf("Fecha de Nacimiento: %s\n", user.Fecha_nacimiento)
+
+	rows, err := db.Query("SELECT nombre FROM ClubDeportivo")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	clubNombre = user.Club_juega
+	serienombre = user.Serie_juega
+	comunanombre = user.Comuna
+	defer rows.Close()
+
+	var Clubes []Club
+	for rows.Next() {
+		var Club Club
+		if err := rows.Scan(&Club.Nombre); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Clubes = append(Clubes, Club)
+
+	}
+	//////////////////////////////////////////////////////////////////////////////
+	rowcomuna, err := db.Query("SELECT nombre FROM Comuna")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rowcomuna.Close()
+
+	var Comunas []Comuna
+	for rowcomuna.Next() {
+		var Comuna Comuna //crea una instancia de Comuna para almacenar los datos de cada fila.
+		if err := rowcomuna.Scan(&Comuna.Nombre); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Comunas = append(Comunas, Comuna)
+
+	}
+	//////////////////////////////////////////////////////////////////////////////
+	rowseries, err := db.Query("SELECT nombre FROM Series")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rowseries.Close()
+
+	var Series []Serie
+	for rowseries.Next() {
+		var Serie Serie //crea una instancia de Comuna para almacenar los datos de cada fila.
+		if err := rowseries.Scan(&Serie.Nombre); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Series = append(Series, Serie)
+
+	}
+	//////////////////////////////////////////////////////////////////////////////
+	pageData := PageData{
+		Clubs:        Clubes,
+		Comunas:      Comunas,
+		Series:       Series,
+		SelectClub:   clubNombre,
+		SelectComuna: comunanombre,
+		SelectSerie:  serienombre,
+		Jugadores:    user,
+		// IsAdmin:  true,
+	}
+	// println(len(Clubes))
+
+	templates.ExecuteTemplate(w, "edit_user.html", pageData)
+
+	// templates.ExecuteTemplate(w, "edit_user.html", user)
 
 	// }
 
@@ -376,6 +489,7 @@ func EditUserHandlerPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	http.Redirect(w, r, "/listUsers", http.StatusSeeOther)
 
 }

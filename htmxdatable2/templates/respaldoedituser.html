@@ -1,65 +1,66 @@
 <div class="container mt-5">
     <h2>Formulario Ingreso de Jugador</h2>
-
-    <form id="edit-form" action="/users/edit/{{ .Jugadores.ID }}" method="POST" class="form-group" enctype="multipart/form-data">
+    {{ range .Jugadores }}
+    {{$jugador := .}}
+    <form id="edit-form" action="/users/edit/{{.ID}}" method="POST" class="form-group" enctype="multipart/form-data">
         <div class="form-row">
             <div class="form-group col-md-6">
                 <label for="rut">Rut:</label>
                 <!-- <input type="text" class="form-control" name="rut" id="rut" placeholder="11.111.111-1" onkeyup="formatearRUT()"  required> -->
-                <input type="text" class="form-control" name="rut" id="rut" placeholder="11.111.111-1" value="{{ .Jugadores.Rut }}-{{ .Jugadores.Dv }}"  disabled>
+                <input type="text" class="form-control" name="rut" id="rut" placeholder="11.111.111-1" value="{{ .Rut }}-{{ .Dv }}"  disabled>
                 <input type="number" id="rut2" name="rut2"  class="invisible"> 
                 <input type="text" id="dv" name="dv"  class="invisible"> 
             </div>
         </div>
     <div class="form-group">
         <label for="nombres">Nombres:</label>
-        <input type="text" class="form-control" id="nombres" name="nombres" value="{{ .Jugadores.Nombres }}"  required>
+        <input type="text" class="form-control" id="nombres" name="nombres" value="{{ .Nombres }}"  required>
     </div>
     <div class="form-group">
         <label for="nombres">Nombrdddes:</label>
-        <input type="text" class="form-control" id="nombres" name="nombres" value="{{ .Jugadores.Comuna }}"  required>
+        <input type="text" class="form-control" id="nombres" name="nombres" value="{{ $jugador.Comuna }}"  required>
     </div>
     <div class="form-row">
         <div class="form-group col-md-6">
             <label for="apellido_paterno">Apellido Paterno:</label>
-            <input type="text" class="form-control" id="apellido_paterno" name="apellido_paterno"   value="{{ .Jugadores.Apellido_paterno }}" required>
+            <input type="text" class="form-control" id="apellido_paterno" name="apellido_paterno"   value="{{ .Apellido_paterno }}" required>
         </div>
         <div class="form-group col-md-6">
             <label for="apellido_materno">Apellido Materno:</label>
-            <input type="text" class="form-control" id="apellido_materno" name="apellido_materno" value="{{ .Jugadores.Apellido_materno }}" required>
+            <input type="text" class="form-control" id="apellido_materno" name="apellido_materno" value="{{ .Apellido_materno }}" required>
         </div>
     </div>
     <label for="email">Email:</label>
-    <input type="email" class="form-control" id="email" name="email" value="{{ if .Jugadores.Mail.Valid }}{{ .Jugadores.Mail.String }}{{ else }}N/A{{ end }}" required>
+    <input type="email" class="form-control" id="email" name="email" value="{{ if .Mail.Valid }}{{ .Mail.String }}{{ else }}N/A{{ end }}" required>
     <div class="form-row">
         <div class="form-group col-md-6">
             <label for="edad">Edad:</label>
-            <input type="number" class="form-control" id="edad" name="edad" value="{{ .Jugadores.Edad }}" required min="1">
+            <input type="number" class="form-control" id="edad" name="edad" value="{{ .Edad }}" required min="1">
         </div>
         <div class="form-group col-md-6">
             <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
-            <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" value="{{ .Jugadores.Fecha_nacimiento | formatFecha }}" required>
+            <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" value="{{ .Fecha_nacimiento | formatFecha }}" required>
         </div>
     </div>
     <div class="form-group">
         <label for= "serie">Comuna:</label>
         <select class="form-control" id="comuna" name="comuna" required>
             <option value ="" selected >Selecciona Comuna:</option>
-            {{ range .Comunas }}
-                <option value="{{ .Nombre }}" {{ if eq .Nombre $.Jugadores.Comuna }}selected{{end}}>{{ .Nombre }}</option>
-            {{ end }}
+            {{ range $.Comunas }}
+            <option value="{{ .Nombre }}" {{ if eq .Nombre $jugador.Comuna }} selected {{ end }}>{{ .Nombre }}</option>
+             {{ end }}
         </select>
     </div>  
-    <div class="form-group">
+    <!-- <div class="form-group">
         <label for="direccion">Dirección:</label>
-        <input type="text" class="form-control" id="direccion" name="direccion" value="{{ .Jugadores.Direccion }}" required>
+        <input type="text" class="form-control" id="direccion" name="direccion" value="{{ .Direccion }}" required>
     </div>
     <div class="form-group">
         <label for= "serie">Club Juega:</label>
         <select class= "form-control" id="club_juega" name="club_juega">
             <option value ="" selected >Selecciona Club en el que Juega:</option>
             {{ range .Clubs }}
-                <option value="{{ .Nombre }}" {{ if eq .Nombre $.Jugadores.Club_juega }}selected{{end}}>{{ .Nombre }}</option> 
+             <option value="{{ .Nombre }}">{{ .Nombre }}</option> 
             {{ end }}
         </select>
     </div>
@@ -68,21 +69,20 @@
         <select class= "form-control" id="serie_juega" name="serie_juega">
             <option value ="" selected >Selecciona Serie en la que Juega:</option>
             {{ range .Series }}
-                <option value="{{ .Nombre }}" {{ if eq .Nombre $.Jugadores.Serie_juega }}selected{{end}}>{{ .Nombre }}</option> 
+             <option value="{{ .Nombre }}">{{ .Nombre }}</option> 
             {{ end }}
         </select>
     </div>     
     <div class="form-group">
         <label for="historial_deportivo">Historial Deportivo:</label>
-           <textarea maxlength="2000" class="form-control" id="historial" name="historial">{{ .Jugadores.Historial }}</textarea>
-
+        <textarea maxlength="2000" class="form-control" id="historial" name="historial" value="{{ .Historial }}" ></textarea>
     </div>
     <label for="foto">Foto del Usuario:</label>
-    <input type="file" class="form-control" id="foto" name="foto" required>
+    <input type="file" class="form-control" id="foto" name="foto" required> -->
 
     <button type="button" onclick="confirmarEnvio()" class="btn btn-primary mt-3">Guardar</button>
     <!-- <button hx-trigger="/listUsers" class="btn btn-danger mt-3">Cancelar</button> -->
     </form>
-   
+    {{ end }}
 
 </div>
