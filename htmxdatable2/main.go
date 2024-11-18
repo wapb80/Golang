@@ -116,7 +116,7 @@ func main() {
 	r.HandleFunc("GET /user/find/{id}", FindUserHandler)
 	// http.HandleFunc("/clubs/delete/", DeleteClubHandler)
 	r.HandleFunc("GET /users/edit/{id}", EditUserHandler)
-	r.HandleFunc("POST /users/edit/{id}", EditUserHandlerPost)
+	r.HandleFunc("POST /users/edit/", EditUserHandlerPost)
 	// http.HandleFunc("/clubs/edit/", EditClubHandler)
 
 	log.Println("Servidor iniciado en :8080")
@@ -392,9 +392,9 @@ func EditUserHandler(w http.ResponseWriter, r *http.Request) {
 	var serienombre string
 	var comunanombre string
 	//var Users []Jugador
-	row := db.QueryRow("SELECT rut,dv,nombres,apellido_paterno,apellido_materno,mail,edad,fecha_nacimiento,comuna,direccion,club_juega,serie_juega,historial,activo,foto FROM jugador WHERE id = ?", id)
+	row := db.QueryRow("SELECT id,rut,dv,nombres,apellido_paterno,apellido_materno,mail,edad,fecha_nacimiento,comuna,direccion,club_juega,serie_juega,historial,activo,foto FROM jugador WHERE id = ?", id)
 	var user Jugador
-	err := row.Scan(&user.Rut, &user.Dv, &user.Nombres, &user.Apellido_paterno, &user.Apellido_materno, &user.Mail, &user.Edad, &user.Fecha_nacimiento, &user.Comuna, &user.Direccion, &user.Club_juega, &user.Serie_juega, &user.Historial, &user.Activo, &user.Foto)
+	err := row.Scan(&user.ID, &user.Rut, &user.Dv, &user.Nombres, &user.Apellido_paterno, &user.Apellido_materno, &user.Mail, &user.Edad, &user.Fecha_nacimiento, &user.Comuna, &user.Direccion, &user.Club_juega, &user.Serie_juega, &user.Historial, &user.Activo, &user.Foto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -480,17 +480,76 @@ func EditUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func EditUserHandlerPost(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	// if r.Method == http.MethodPost {
-	name := r.FormValue("name")
-	email := r.FormValue("email")
-	_, err := db.Exec("UPDATE users SET name = ?,email = ? WHERE id = ?", name, email, id)
+	// var q string
+	file, _, err := r.FormFile("foto")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+		_, err := db.Exec("UPDATE jugador SET nombres = ?,apellido_paterno= ?,apellido_materno= ?,mail= ?,edad= ?,fecha_nacimiento= ?,comuna= ?,direccion= ?,club_juega= ?,serie_juega= ?,historial= ? WHERE id = ?", r.FormValue("nombres"), r.FormValue("apellido_paterno"), r.FormValue("apellido_materno"), r.FormValue("email"), r.FormValue("edad"), r.FormValue("fecha_nacimiento"), r.FormValue("comuna"), r.FormValue("direccion"), r.FormValue("club_juega"), r.FormValue("serie_juega"), r.FormValue("historial"), r.FormValue("id"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		err := r.ParseMultipartForm(10 << 20) // Limitar a 10 MB
+		if err != nil {
+			http.Error(w, "Error al parsear el formulario: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		file, _, err := r.FormFile("foto")
+		if err != nil {
+			http.Error(w, "Error al obtener el archivo: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
 
-	http.Redirect(w, r, "/listUsers", http.StatusSeeOther)
+		//********************************************************************** Cambiar nombre de la imagen
+		// Obtener la fecha y hora actuales
+		now := time.Now()
+		// Formatear la fecha y hora en el formato deseado: día mes año hora minutos sin separadores
+		formattedDateTime := now.Format("020120061504")
+
+		// Definir un entero que deseas concatenar
+		number := r.FormValue("rut2")
+
+		// Concatenar la fecha y hora con el entero (convertido a cadena)
+		nombreFoto := fmt.Sprintf("%s_%s", number, formattedDateTime)
+
+		//*********************************************************************************** Cambiar nombre de la imagen
+		out, err := os.Create(uploadPath + nombreFoto + ".jpg") // Cambia el nombre según sea necesario
+		if err != nil {
+			http.Error(w, "Error al crear el archivo: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer out.Close()
+
+		if _, err := io.Copy(out, file); err != nil {
+			http.Error(w, "Error al guardar el archivo: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = db.Exec("UPDATE jugador SET nombres = ?,apellido_paterno= ?,apellido_materno= ?,mail= ?,edad= ?,fecha_nacimiento= ?,comuna= ?,direccion= ?,club_juega= ?,serie_juega= ?,historial= ?,foto=? WHERE id = ?", r.FormValue("nombres"), r.FormValue("apellido_paterno"), r.FormValue("apellido_materno"), r.FormValue("email"), r.FormValue("edad"), r.FormValue("fecha_nacimiento"), r.FormValue("comuna"), r.FormValue("direccion"), r.FormValue("club_juega"), r.FormValue("serie_juega"), r.FormValue("historial"), nombreFoto, r.FormValue("id"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+	}
+	// _, err = db.Exec("UPDATE jugador SET nombres = ?,apellido_paterno= ?,apellido_materno= ?,mail= ?,edad= ?,fecha_nacimiento= ?,comuna= ?,direccion= ?,club_juega= ?,serie_juega= ?,historial= ?,foto= ? WHERE id = ?", r.FormValue("nombres"), r.FormValue("apellido_paterno"), r.FormValue("apellido_materno"), r.FormValue("email"), r.FormValue("edad"), r.FormValue("fecha_nacimiento"), r.FormValue("comuna"), r.FormValue("direccion"), r.FormValue("club_juega"), r.FormValue("serie_juega"), r.FormValue("historial"), r.FormValue("id"))
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+
+	//println(id)
+	println(file)
+	// _,
+	// email := r.FormValue("email")
+	// row := db.QueryRow("UPDATE jugador nombres = ?,apellido_paterno= ?,apellido_materno= ?
+	// 				,mail= ?,edad= ?,fecha_nacimiento= ?,comuna= ?,direccion= ?,club_juega= ?
+	// 				,serie_juega= ?,historial= ?,foto= ?  WHERE id = ?", id)
+	//_, err := db.Exec("UPDATE users SET name = ?,email = ? WHERE id = ?", name, email, id)
+	// _, err := db.Exec("UPDATE users SET name = ?,email = ? WHERE id = ?", r.FormValue("nombres"),r.FormValue("apellido_paterno"),r.FormValue("apellido_materno"),r.FormValue("email"),r.FormValue("edad"),r.FormValue("fecha_nacimiento"),r.FormValue("comuna"),r.FormValue("direccion"),r.FormValue("club_juega"),r.formValue("serie_juega"),r.formValue("historial") ,id)
+
+	// http.Redirect(w, r, "/listUsers", http.StatusSeeOther)
 
 }
 

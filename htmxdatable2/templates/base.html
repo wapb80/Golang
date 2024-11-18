@@ -147,9 +147,8 @@
             return edad;
         }
 
-        function confirmarEnvio() {
+        function confirmarEnvio(origen) {
                 // Obtiene los elementos del formulario
-
                 const rut = document.getElementById('rut').value.trim();
 
                 const nombres = document.getElementById('nombres').value.trim();
@@ -164,8 +163,7 @@
                 const club_juega = document.getElementById('club_juega').value.trim();
                 const foto = document.getElementById('foto').files[0];
 
-               
-               
+ 
                 const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Expresión regular para formato de email
 
                 if (!regex.test(email)) {
@@ -191,24 +189,40 @@
                                 return false; // Detener la función si falta un campo
 
                     }
-
-                    const campos = {
-                    rut:"Rut",
-                    nombres: 'Nombres',
-                    apellido_paterno: 'Apellido Paterno',
-                    apellido_materno: 'Apellido Materno',
-                    email: 'Correo Electrónico',
-                    edad: 'Edad',
-                    fecha_nacimiento: 'Fecha de Nacimiento',
-                    comuna: 'Comuna',
-                    direccion: 'Dirección',
-                    club_juega: 'Club Juega',                    
-                    serie_juega: 'Serie Juega',
-                    historial : 'Historial Deportivo',
-                    foto: 'Foto'
-                    };
-
-                    // Función para validar campos vacíos
+                    if(origen == 'editar'){
+                    var campos = {
+                        rut:"Rut",
+                        nombres: 'Nombres',
+                        apellido_paterno: 'Apellido Paterno',
+                        apellido_materno: 'Apellido Materno',
+                        email: 'Correo Electrónico',
+                        edad: 'Edad',
+                        fecha_nacimiento: 'Fecha de Nacimiento',
+                        comuna: 'Comuna',
+                        direccion: 'Dirección',
+                        club_juega: 'Club Juega',                    
+                        serie_juega: 'Serie Juega',
+                        historial : 'Historial Deportivo'
+                        };
+                    }else{
+                        var campos = {
+                        rut:"Rut",
+                        nombres: 'Nombres',
+                        apellido_paterno: 'Apellido Paterno',
+                        apellido_materno: 'Apellido Materno',
+                        email: 'Correo Electrónico',
+                        edad: 'Edad',
+                        fecha_nacimiento: 'Fecha de Nacimiento',
+                        comuna: 'Comuna',
+                        direccion: 'Dirección',
+                        club_juega: 'Club Juega',                    
+                        serie_juega: 'Serie Juega',
+                        historial : 'Historial Deportivo',
+                        foto: 'Foto'
+                        };
+                    }
+                    
+                     // Función para validar campos vacíos
                     for (let campo in campos) {
                             const valor = document.getElementById(campo)?.value || ''; // Obtiene el valor del campo (si existe)
                             
@@ -241,25 +255,43 @@
                 //     return;
                 // }
                
+                // Verificar si se ha seleccionado un archivo
+                const inputFile = document.getElementById('foto');
+                if ( (inputFile.files.length != 0 && origen=='editar') || origen=='ingresar' ) {
 
+                            // Validar la extensión del archivo
+                    const fileName = inputFile.files[0].name;
+                    const extPermitidas = /(.png|.jpg|.jpeg|.gif)$/i;
+            
+                        if (!extPermitidas.exec(fileName)) {
+                                Swal.fire({
+                                icon: 'error',
+                                title: 'Tipo de archivo no permitido',
+                                text: 'La imagen debe ser de tipo JPG o PNG.',
+                            });
+                            return false; // Prevenir el envío del formulario
+                        }
+                        if (foto.size > 2 * 1024 * 1024) { // 2 MB límite
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Archivo demasiado grande',
+                                text: 'La imagen debe ser menor de 2 MB.',
+                            });
+                            return;
+                        }
+                    }
+
+        
                 // Validar el tamaño y tipo del archivo de imagen
-                const validImageTypes = ['image/jpeg', 'image/png'];
-                if (!validImageTypes.includes(foto.type)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Tipo de archivo no permitido',
-                        text: 'La imagen debe ser de tipo JPG o PNG.',
-                    });
-                    return;
-                }
-                if (foto.size > 2 * 1024 * 1024) { // 2 MB límite
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Archivo demasiado grande',
-                        text: 'La imagen debe ser menor de 2 MB.',
-                    });
-                    return;
-                }
+                // const validImageTypes = ['image/jpeg', 'image/png'];
+                // if (!validImageTypes.includes(foto.type)) {
+                //     Swal.fire({
+                //         icon: 'error',
+                //         title: 'Tipo de archivo no permitido',
+                //         text: 'La imagen debe ser de tipo JPG o PNG.',
+                //     });
+                //     return;
+                // }
 
                 // Confirmación de envío
                 Swal.fire({

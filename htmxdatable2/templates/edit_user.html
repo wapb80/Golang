@@ -9,15 +9,16 @@
                 <input type="text" class="form-control" name="rut" id="rut" placeholder="11.111.111-1" value="{{ .Jugadores.Rut }}-{{ .Jugadores.Dv }}"  disabled>
                 <input type="number" id="rut2" name="rut2"  class="invisible"> 
                 <input type="text" id="dv" name="dv"  class="invisible"> 
+                <input type="text" id="id" name="id"  class="invisible" value="{{  .Jugadores.ID  }}">
+            </div>
+            <div class="form-group">
+                <img src="/static/{{ .Jugadores.Foto }}.jpg" alt="Foto de {{ .Jugadores.Nombres }}" class="img-thumbnail" style="max-width: 200px;">
+                <input type="file" class="form-control" id="foto" name="foto" >
             </div>
         </div>
     <div class="form-group">
         <label for="nombres">Nombres:</label>
         <input type="text" class="form-control" id="nombres" name="nombres" value="{{ .Jugadores.Nombres }}"  required>
-    </div>
-    <div class="form-group">
-        <label for="nombres">Nombrdddes:</label>
-        <input type="text" class="form-control" id="nombres" name="nombres" value="{{ .Jugadores.Comuna }}"  required>
     </div>
     <div class="form-row">
         <div class="form-group col-md-6">
@@ -77,10 +78,11 @@
            <textarea maxlength="2000" class="form-control" id="historial" name="historial">{{ .Jugadores.Historial }}</textarea>
 
     </div>
-    <label for="foto">Foto del Usuario:</label>
-    <input type="file" class="form-control" id="foto" name="foto" required>
 
-    <button type="button" onclick="confirmarEnvio()" class="btn btn-primary mt-3">Guardar</button>
+
+
+<!-- <img src="/statics/{{ .Jugadores.Foto }}.jpg" alt="Foto de {{ .Jugadores.Nombres }}" class="img-thumbnail" style="max-width: 200px;"> -->
+    <button type="button" onclick="confirmarEnvio('editar')" class="btn btn-primary mt-3">Guardar</button>
     <!-- <button hx-trigger="/listUsers" class="btn btn-danger mt-3">Cancelar</button> -->
     </form>
    
