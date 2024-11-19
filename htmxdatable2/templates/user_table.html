@@ -27,7 +27,9 @@
             <td>
                 <!-- puedes ocupar hx-Post para que sea por POST -->
                 <button hx-get="/users/edit/{{ .ID }}"  hx-target="#content" data-bs-toggle="modal" class="btn btn-warning btn-sm">Modificar</button>
-                <button hx-delete="/user/delete/{{ .ID }}" class="btn btn-danger btn-sm">Eliminar</button>
+                                <!-- <button hx-delete="/user/delete/{{ .ID }}" hx-confirm="confirmarEliminacion()" class="btn btn-danger btn-sm">Eliminar</button> -->
+                <button onclick="confirmDelete('/user/delete/{{ .ID }}', this)" class="btn btn-danger btn-sm">Eliminar</button>
+                <!-- <button hx-delete="/user/delete/{{ .ID }}" class="btn btn-danger btn-sm">Eliminar</button> -->
             </td>
         </tr>
         {{ end }}

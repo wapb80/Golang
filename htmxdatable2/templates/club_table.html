@@ -2,18 +2,26 @@
     <thead>
         <tr>
             <th>Nombre</th>
-            <th>Email</th>
-            <th>Acciones</th>
+            <th>Representante</th>
+            <th>Comuna</th>
+            <th>Direccion</th>
+            <th>Acciones</th>                                              
         </tr>
     </thead>
     <tbody>
-        {{ range .Users }}
+        {{ range . }}
         <tr>
-            <td>{{ .Name }}</td>
-            <td>{{ .Email }}</td>
+            
+            <td>{{ .Nombre}}</td>
+            <td>{{ .Representante}}</td>
+            <td>{{ .Comuna }}</td>
+            <td>{{ .Direccion }}</td>
             <td>
-                <button hx-get="/editUser/{{ .ID }}" hx-target="#modal-edit" data-bs-toggle="modal" class="btn btn-warning btn-sm">Modificar</button>
-                <button hx-delete="/deleteUser/{{ .ID }}" class="btn btn-danger btn-sm">Eliminar</button>
+                <!-- puedes ocupar hx-Post para que sea por POST -->
+                <button hx-get="/clubs/edit/{{ .ID }}"  hx-target="#content" data-bs-toggle="modal" class="btn btn-warning btn-sm">Modificar</button>
+                <!-- <button hx-delete="/user/delete/{{ .ID }}" hx-confirm="confirmarEliminacion()" class="btn btn-danger btn-sm">Eliminar</button> -->
+                <button onclick="confirmDelete('/club/delete/{{ .ID }}', this)" class="btn btn-danger btn-sm">Eliminar</button>
+                <!-- <button hx-delete="/user/delete/{{ .ID }}" class="btn btn-danger btn-sm">Eliminar</button> -->
             </td>
         </tr>
         {{ end }}
@@ -23,4 +31,5 @@
     $(document).ready(function() {
         $('#example').DataTable();
     });
+    // <!-- <td>{{ if .Email.Valid }}{{ .Email.String }}{{ else }}N/A{{ end }}</td> -->    
 </script>

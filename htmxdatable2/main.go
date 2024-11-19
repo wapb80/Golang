@@ -33,8 +33,11 @@ type Jugador struct {
 }
 
 type Club struct {
-	ID     int
-	Nombre string
+	ID            int
+	Nombre        string
+	Representante string
+	Comuna        string
+	Direccion     string
 }
 type Comuna struct {
 	ID     int
@@ -66,6 +69,7 @@ type PageData struct {
 	SelectComuna string
 	SelectSerie  string
 	Jugadores    Jugador
+	Club         Club
 	//  UserName  string
 	// IsAdmin   bool
 	// Agrega más campos si es necesario
@@ -112,12 +116,18 @@ func main() {
 	r.HandleFunc("POST /users/create", CreateUserHandler)
 	// http.HandleFunc("/clubs/create", CreateClubHandler)
 	// http.HandleFunc("/clubs/insert", insertClubHandler)
-	r.HandleFunc("GET /user/delete/{id}", DeleteUserHandler)
+	r.HandleFunc("DELETE /user/delete/{id}", DeleteUserHandler)
 	r.HandleFunc("GET /user/find/{id}", FindUserHandler)
 	// http.HandleFunc("/clubs/delete/", DeleteClubHandler)
 	r.HandleFunc("GET /users/edit/{id}", EditUserHandler)
 	r.HandleFunc("POST /users/edit/", EditUserHandlerPost)
-	// http.HandleFunc("/clubs/edit/", EditClubHandler)
+	/************************************************************* club ****************/
+	r.HandleFunc("GET /clubs/edit/{id}", EditClubHandler)
+	r.HandleFunc("POST /club/edit/", EditClubHandlerPost)
+	r.HandleFunc("GET /createClub", templateCreateClubHandler)
+	r.HandleFunc("POST /club/create", CreateClubHandler)
+	r.HandleFunc("DELETE /club/delete/{id}", DeleteClubHandler)
+	r.HandleFunc("GET /listClubs", listClubHandler)
 
 	log.Println("Servidor iniciado en :8080")
 	http.ListenAndServe(":8080", r)
@@ -139,7 +149,7 @@ func main() {
 // }
 
 func listUsersHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id,rut,dv,nombres,apellido_paterno,apellido_materno,club_juega,foto,serie_juega,edad FROM jugador")
+	rows, err := db.Query("SELECT id,rut,dv,nombres,apellido_paterno,apellido_materno,club_juega,foto,serie_juega,edad FROM jugador where activo  in (1) ")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -158,26 +168,6 @@ func listUsersHandler(w http.ResponseWriter, r *http.Request) {
 	// println(len(users))
 	templates.ExecuteTemplate(w, "user_table.html", Jugadores)
 }
-
-// func ListClubsHandler(w http.ResponseWriter, r *http.Request) {
-// 	rows, err := db.Query("SELECT id, name FROM clubs")
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-// 	defer rows.Close()
-
-// 	var clubs []Club
-// 	for rows.Next() {
-// 		var club Club
-// 		if err := rows.Scan(&club.ID, &club.Name); err != nil {
-// 			http.Error(w, err.Error(), http.StatusInternalServerError)
-// 			return
-// 		}
-// 		clubs = append(clubs, club)
-// 	}
-// 	templates.ExecuteTemplate(w, "clubs.html", clubs)
-// }
 
 // // Crear USER
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -234,7 +224,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "Usuario Ingeresado exitosamente ")
 	//templates.ExecuteTemplate(w, "usuarioCreado.html", nil)
-	// http.Redirect(w, r, "/", http.StatusSeeOther)
+	//http.Redirect(w, r, "/listClubs", http.StatusSeeOther)
 	//listUsersHandler(w, r)
 }
 func FindUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -256,7 +246,8 @@ func FindUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	_, err := db.Exec("DELETE FROM users WHERE id = ?", id)
+	_, err := db.Exec("Update jugador set activo=0 WHERE id = ?", id)
+	// _, err := db.Exec("DELETE FROM users WHERE id = ?", id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -337,54 +328,6 @@ func templateCreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	templates.ExecuteTemplate(w, "create_user2.html", pageData)
 }
-
-// func insertClubHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method == http.MethodPost {
-// 		// name := r.FormValue("name")
-// 		// representante := r.FormValue("club-representante")
-
-// 		// _, err := db.Exec("INSERT INTO clubs (name) VALUES (?)", name)
-// 		// if err != nil {
-// 		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		// 	return
-// 		// }
-
-// 		http.Redirect(w, r, "/clubs", http.StatusSeeOther)
-// 		return
-// 	}
-
-// }
-
-// func CreateClubHandler(w http.ResponseWriter, r *http.Request) {
-
-// 	tmpl, err := template.ParseFiles("templates/create_club.html")
-
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-// 	tmpl.Execute(w, nil)
-// 	// tmpl.ExecuteTemplate(w)
-// 	// name := r.FormValue("name")
-// 	// _, err := db.Exec("INSERT INTO clubs (name) VALUES (?)", name)
-// 	// if err != nil {
-// 	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	// 	return
-// 	// }
-// 	// http.Redirect(w, r, "/clubs", http.StatusSeeOther)
-// 	// return
-
-// }
-
-// func DeleteClubHandler(w http.ResponseWriter, r *http.Request) {
-// 	id := r.URL.Path[len("/clubs/delete/"):]
-// 	_, err := db.Exec("DELETE FROM clubs WHERE id = ?", id)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-// 	http.Redirect(w, r, "/clubs", http.StatusSeeOther)
-// }
 
 func EditUserHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
@@ -533,23 +476,10 @@ func EditUserHandlerPost(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
-	// _, err = db.Exec("UPDATE jugador SET nombres = ?,apellido_paterno= ?,apellido_materno= ?,mail= ?,edad= ?,fecha_nacimiento= ?,comuna= ?,direccion= ?,club_juega= ?,serie_juega= ?,historial= ?,foto= ? WHERE id = ?", r.FormValue("nombres"), r.FormValue("apellido_paterno"), r.FormValue("apellido_materno"), r.FormValue("email"), r.FormValue("edad"), r.FormValue("fecha_nacimiento"), r.FormValue("comuna"), r.FormValue("direccion"), r.FormValue("club_juega"), r.FormValue("serie_juega"), r.FormValue("historial"), r.FormValue("id"))
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
 
-	//println(id)
 	println(file)
-	// _,
-	// email := r.FormValue("email")
-	// row := db.QueryRow("UPDATE jugador nombres = ?,apellido_paterno= ?,apellido_materno= ?
-	// 				,mail= ?,edad= ?,fecha_nacimiento= ?,comuna= ?,direccion= ?,club_juega= ?
-	// 				,serie_juega= ?,historial= ?,foto= ?  WHERE id = ?", id)
-	//_, err := db.Exec("UPDATE users SET name = ?,email = ? WHERE id = ?", name, email, id)
-	// _, err := db.Exec("UPDATE users SET name = ?,email = ? WHERE id = ?", r.FormValue("nombres"),r.FormValue("apellido_paterno"),r.FormValue("apellido_materno"),r.FormValue("email"),r.FormValue("edad"),r.FormValue("fecha_nacimiento"),r.FormValue("comuna"),r.FormValue("direccion"),r.FormValue("club_juega"),r.formValue("serie_juega"),r.formValue("historial") ,id)
-
-	// http.Redirect(w, r, "/listUsers", http.StatusSeeOther)
+	fmt.Fprintf(w, "Modificacion  exitosamente ")
+	//http.Redirect(w, r, "/listUsers", http.StatusSeeOther)
 
 }
 
@@ -563,3 +493,157 @@ func EditUserHandlerPost(w http.ResponseWriter, r *http.Request) {
 // 	}
 // 	templates.ExecuteTemplate(w, "edit_club.html", club)
 // }
+
+/*--------------------------------------------------------------------------------------------clubs-------------*/
+func templateCreateClubHandler(w http.ResponseWriter, r *http.Request) {
+	//////////////////////////////////////////////////////////////////////////////
+	rowcomuna, err := db.Query("SELECT nombre FROM Comuna")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rowcomuna.Close()
+
+	/*itera sobre los resultados de una consulta a la base de datos y extrae información de cada fila.
+	for rows.Next():
+
+	Esta es la estructura básica de un bucle for en Go, en el que se llama al método Next() de rows para iterar sobre los resultados de la consulta.
+	rows.Next() devuelve true mientras haya más filas en el conjunto de resultados. Cuando se alcanza el final, devuelve false, y el bucle termina.
+	*/
+	var Comunas []Comuna
+	for rowcomuna.Next() {
+		var Comuna Comuna //crea una instancia de Comuna para almacenar los datos de cada fila.
+		if err := rowcomuna.Scan(&Comuna.Nombre); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Comunas = append(Comunas, Comuna)
+	}
+
+	pageData := PageData{
+		Comunas: Comunas,
+	}
+	// println(len(Clubes))
+
+	templates.ExecuteTemplate(w, "create_club.html", pageData)
+}
+
+// // Crear CLUB
+func CreateClubHandler(w http.ResponseWriter, r *http.Request) {
+
+	_, err := db.Exec("INSERT INTO ClubDeportivo (nombre,comuna,direccion,representante,activo) VALUES (?, ?, ?, ?, ?)", r.FormValue("nombre"), r.FormValue("comuna"), r.FormValue("direccion"), r.FormValue("representante"), 1)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	//fmt.Fprintf(w, "Club Ingeresado exitosamente ")
+	//templates.ExecuteTemplate(w, "usuarioCreado.html", nil)
+	http.Redirect(w, r, "/listClubs", http.StatusSeeOther)
+	//listUsersHandler(w, r)
+}
+
+func listClubHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT id,nombre,comuna, representante,direccion FROM ClubDeportivo where activo=1")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var Clubs []Club
+	for rows.Next() {
+		var club Club
+		if err := rows.Scan(&club.ID, &club.Nombre, &club.Comuna, &club.Direccion, &club.Representante); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Clubs = append(Clubs, club)
+	}
+	// println(len(users))
+	templates.ExecuteTemplate(w, "club_table.html", Clubs)
+}
+
+func DeleteClubHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	_, err := db.Exec("Update ClubDeportivo set activo=0 WHERE id = ?", id)
+	// _, err := db.Exec("DELETE FROM users WHERE id = ?", id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/listClubs", http.StatusSeeOther)
+}
+
+func EditClubHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	row := db.QueryRow("SELECT id,nombre,representante,comuna,direccion FROM ClubDeportivo WHERE id = ?", id)
+	var club Club
+	err := row.Scan(&club.ID, &club.Nombre, &club.Representante, &club.Comuna, &club.Direccion)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	//////////////////////////////////////////////////////////////////////////////
+	rowcomuna, err := db.Query("SELECT nombre FROM Comuna")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rowcomuna.Close()
+
+	var Comunas []Comuna
+	for rowcomuna.Next() {
+		var Comuna Comuna //crea una instancia de Comuna para almacenar los datos de cada fila.
+		if err := rowcomuna.Scan(&Comuna.Nombre); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Comunas = append(Comunas, Comuna)
+
+	}
+	//////////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////////
+	pageData := PageData{
+		Club:    club,
+		Comunas: Comunas,
+	}
+
+	templates.ExecuteTemplate(w, "edit_club.html", pageData)
+
+	// templates.ExecuteTemplate(w, "edit_user.html", user)
+
+	// }
+
+}
+
+func EditClubHandlerPost(w http.ResponseWriter, r *http.Request) {
+
+	// // Parsear los datos del formulario
+	// if err := r.ParseForm(); err != nil {
+	// 	http.Error(w, "Error al procesar los datos del formulario", http.StatusBadRequest)
+	// 	return
+	// }
+
+	// // Capturar los valores enviados
+	// nombre := r.FormValue("nombre")
+	// representante := r.FormValue("representante")
+	// comuna := r.FormValue("comuna")
+	// direccion := r.FormValue("direccion")
+	// id := r.FormValue("id")
+
+	// // Debugging: Imprimir los valores
+	// log.Printf("Datos recibidos: nombre=%s, representante=%s, comuna=%s, direccion=%s, id=%s", nombre, representante, comuna, direccion, id)
+
+	_, err := db.Exec("UPDATE ClubDeportivo SET nombre = ?,representante= ?,comuna= ?,direccion= ? WHERE id = ?", r.FormValue("nombre"), r.FormValue("representante"), r.FormValue("comuna"), r.FormValue("direccion"), r.FormValue("id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/listClubs", http.StatusSeeOther)
+
+}
