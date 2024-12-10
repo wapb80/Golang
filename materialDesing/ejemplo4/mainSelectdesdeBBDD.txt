@@ -1,0 +1,100 @@
+package main
+
+import (
+	"database/sql"
+	"html/template"
+	"log"
+	"net/http"
+
+	_ "github.com/lib/pq"
+)
+
+var (
+	tmpl = template.Must(template.ParseGlob("templates/*.html"))
+	db   *sql.DB
+)
+
+// Configurar la conexión a la base de datos
+func initDB() {
+	var err error
+	connStr := "postgres://usuario:contraseña@localhost:5432/tu_base_de_datos?sslmode=disable"
+	db, err = sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatalf("Error al conectar a la base de datos: %v", err)
+	}
+	if err = db.Ping(); err != nil {
+		log.Fatalf("No se puede conectar a la base de datos: %v", err)
+	}
+	log.Println("Conexión a la base de datos exitosa")
+}
+
+func renderTemplate(w http.ResponseWriter, tmplName string, data interface{}) {
+	err := tmpl.ExecuteTemplate(w, tmplName, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func menuReportesHandler(w http.ResponseWriter, r *http.Request) {
+	// Consultar categorías y regiones desde la base de datos
+	categorias := queryList("SELECT id, nombre FROM categorias")
+	regiones := queryList("SELECT id, nombre FROM regiones")
+
+	renderTemplate(w, "menu_reportes.html", map[string]interface{}{
+		"Categorias": categorias,
+		"Regiones":   regiones,
+	})
+}
+
+func provinciasHandler(w http.ResponseWriter, r *http.Request) {
+	regionID := r.URL.Query().Get("region_id")
+	query := "SELECT id, nombre FROM provincias WHERE region_id = $1"
+	provincias := queryList(query, regionID)
+
+	renderTemplate(w, "select_options.html", map[string]interface{}{
+		"Options": provincias,
+	})
+}
+
+func comunasHandler(w http.ResponseWriter, r *http.Request) {
+	provinciaID := r.URL.Query().Get("provincia_id")
+	query := "SELECT id, nombre FROM comunas WHERE provincia_id = $1"
+	comunas := queryList(query, provinciaID)
+
+	renderTemplate(w, "select_options.html", map[string]interface{}{
+		"Options": comunas,
+	})
+}
+
+// Helper para consultar datos y formatearlos
+func queryList(query string, args ...interface{}) []map[string]string {
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		log.Printf("Error en la consulta: %v", err)
+		return nil
+	}
+	defer rows.Close()
+
+	var result []map[string]string
+	for rows.Next() {
+		var id, nombre string
+		if err := rows.Scan(&id, &nombre); err != nil {
+			log.Printf("Error al escanear: %v", err)
+			continue
+		}
+		result = append(result, map[string]string{"ID": id, "Nombre": nombre})
+	}
+	return result
+}
+
+func main() {
+	initDB()
+	defer db.Close()
+
+	http.HandleFunc("/", menuReportesHandler)
+	http.HandleFunc("/provincias", provinciasHandler)
+	http.HandleFunc("/comunas", comunasHandler)
+
+	log.Println("Servidor iniciado en http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}

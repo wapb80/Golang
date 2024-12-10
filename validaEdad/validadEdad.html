@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validación de Edad y Fecha de Nacimiento</title>
+    <script>
+        function calcularEdad(fechaNacimiento) {
+            const hoy = new Date();
+            const nacimiento = new Date(fechaNacimiento);
+            let edad = hoy.getFullYear() - nacimiento.getFullYear();
+            const mes = hoy.getMonth() - nacimiento.getMonth();
+
+            // Ajustar la edad si el cumpleaños aún no ha ocurrido este año
+            if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+                edad--;
+            }
+            return edad;
+        }
+
+        function validarConcordancia() {
+            const edadInput = document.getElementById("edad").value;
+            const fechaNacimientoInput = document.getElementById("fechaNacimiento").value;
+
+            if (!fechaNacimientoInput) {
+                alert("Por favor, ingresa una fecha de nacimiento.");
+                return;
+            }
+
+            const edadCalculada = calcularEdad(fechaNacimientoInput);
+
+            if (parseInt(edadInput) !== edadCalculada) {
+                alert(`La edad ingresada (${edadInput}) no coincide con la fecha de nacimiento.`);
+            } else {
+                alert("La edad y la fecha de nacimiento son coherentes.");
+            }
+        }
+    </script>
+</head>
+<body>
+
+<div class="container mt-5">
+    <h2>Formulario de Validación</h2>
+    <form onsubmit="event.preventDefault(); validarConcordancia();">
+        <div class="form-group">
+            <label for="edad">Edad:</label>
+            <input type="number" class="form-control" id="edad" required>
+        </div>
+        <div class="form-group">
+            <label for="fechaNacimiento">Fecha de Nacimiento:</label>
+            <input type="date" class="form-control" id="fechaNacimiento" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Validar</button>
+    </form>
+</div>
+
+</body>
+</html>

@@ -23,7 +23,7 @@ var items = []Item{
 
 func main() {
 	http.HandleFunc("GET /home", renderHomePage)
-	http.HandleFunc("POST /api/items", getItemsAPI)
+	http.HandleFunc("GET /api/items", getItemsAPI)
 	http.HandleFunc("GET /item", getItemPage)
 	http.HandleFunc("GET /modal", getModal)
 	http.HandleFunc("GET /uikit-modal", getModal2)

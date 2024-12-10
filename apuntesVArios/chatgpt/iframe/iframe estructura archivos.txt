@@ -1,0 +1,253 @@
+Organizar el código en una estructura de archivos clara facilita el mantenimiento y la expansión del proyecto. A continuación, se presenta una propuesta mejorada para la estructura de archivos y el código:
+
+Estructura de Archivos
+go
+Copiar código
+project/
+├── main.go
+├── handlers/
+│   ├── index.go
+│   ├── charts.go
+├── models/
+│   └── db.go
+├── templates/
+│   ├── index.html
+│   ├── graph.html
+├── charts/
+│   ├── bar.go
+│   ├── line.go
+│   ├── pie.go
+└── go.mod
+Descripción de la Estructura
+main.go: El punto de entrada del programa.
+handlers/: Controladores que manejan las rutas del servidor (indexHandler, generateChartsHandler).
+models/: Archivo para inicializar y manejar la conexión con la base de datos PostgreSQL.
+charts/: Funciones para generar los diferentes tipos de gráficos.
+templates/: Archivos HTML para el frontend.
+Código Mejorado
+main.go
+go
+Copiar código
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"project/handlers"
+	"project/models"
+)
+
+func main() {
+	// Inicializar la conexión a PostgreSQL
+	err := models.InitDB("postgres://username:password@localhost:5432/dbname")
+	if err != nil {
+		log.Fatalf("Error connecting to the database: %v", err)
+	}
+	defer models.CloseDB()
+
+	// Configurar las rutas
+	http.HandleFunc("/", handlers.IndexHandler)
+	http.HandleFunc("/generate-charts", handlers.GenerateChartsHandler)
+
+	// Iniciar el servidor
+	fmt.Println("Server running at http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+handlers/index.go
+go
+Copiar código
+package handlers
+
+import (
+	"html/template"
+	"net/http"
+)
+
+var templates = template.Must(template.ParseFiles("templates/index.html", "templates/graph.html"))
+
+// IndexHandler maneja la página principal
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	templates.ExecuteTemplate(w, "index.html", nil)
+}
+handlers/charts.go
+go
+Copiar código
+package handlers
+
+import (
+	"net/http"
+	"project/charts"
+	"project/models"
+	"sync"
+)
+
+// GenerateChartsHandler maneja la generación de gráficos
+func GenerateChartsHandler(w http.ResponseWriter, r *http.Request) {
+	age := r.URL.Query().Get("age")
+	gender := r.URL.Query().Get("gender")
+	nationality := r.URL.Query().Get("nationality")
+
+	var wg sync.WaitGroup
+	chartsHTML := ""
+
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		data := models.FetchChartData("bar", age, gender, nationality)
+		chartsHTML += charts.GenerateBarChart(data)
+	}()
+	go func() {
+		defer wg.Done()
+		data := models.FetchChartData("line", age, gender, nationality)
+		chartsHTML += charts.GenerateLineChart(data)
+	}()
+	go func() {
+		defer wg.Done()
+		data := models.FetchChartData("pie", age, gender, nationality)
+		chartsHTML += charts.GeneratePieChart(data)
+	}()
+
+	wg.Wait()
+
+	templates.ExecuteTemplate(w, "graph.html", chartsHTML)
+}
+models/db.go
+go
+Copiar código
+package models
+
+import (
+	"context"
+	"log"
+
+	"github.com/jackc/pgx/v5"
+)
+
+var db *pgx.Conn
+
+// InitDB inicializa la conexión con PostgreSQL
+func InitDB(connectionString string) error {
+	var err error
+	db, err = pgx.Connect(context.Background(), connectionString)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// CloseDB cierra la conexión con la base de datos
+func CloseDB() {
+	db.Close(context.Background())
+}
+
+// FetchChartData obtiene los datos para los gráficos desde PostgreSQL
+func FetchChartData(chartType, age, gender, nationality string) []int {
+	query := `
+        SELECT value
+        FROM demographics
+        WHERE age_group = $1 AND gender = $2 AND nationality = $3
+    `
+	rows, err := db.Query(context.Background(), query, age, gender, nationality)
+	if err != nil {
+		log.Printf("Error querying database: %v\n", err)
+		return nil
+	}
+	defer rows.Close()
+
+	var data []int
+	for rows.Next() {
+		var value int
+		if err := rows.Scan(&value); err != nil {
+			log.Printf("Error scanning row: %v\n", err)
+			continue
+		}
+		data = append(data, value)
+	}
+	return data
+}
+charts/bar.go
+go
+Copiar código
+package charts
+
+import "github.com/go-charts/charts"
+
+// GenerateBarChart genera un gráfico de barras
+func GenerateBarChart(data []int) string {
+	chart := charts.NewChart()
+	chart.AddData("Barras", data)
+	return chart.RenderHTML()
+}
+charts/line.go
+go
+Copiar código
+package charts
+
+import "github.com/go-charts/charts"
+
+// GenerateLineChart genera un gráfico de líneas
+func GenerateLineChart(data []int) string {
+	chart := charts.NewChart()
+	chart.AddData("Líneas", data)
+	return chart.RenderHTML()
+}
+charts/pie.go
+go
+Copiar código
+package charts
+
+import "github.com/go-charts/charts"
+
+// GeneratePieChart genera un gráfico de pastel
+func GeneratePieChart(data []int) string {
+	chart := charts.NewChart()
+	chart.AddData("Pie", data)
+	return chart.RenderHTML()
+}
+templates/index.html
+html
+Copiar código
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Generador de Gráficos</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+</head>
+<body>
+    <h1>Seleccione los Parámetros</h1>
+    <form hx-get="/generate-charts" hx-target="#iframe-container">
+        <label>Edad:</label>
+        <input type="text" name="age">
+        <label>Género:</label>
+        <input type="text" name="gender">
+        <label>Nacionalidad:</label>
+        <input type="text" name="nationality">
+        <button type="submit">Generar Gráficos</button>
+    </form>
+    <iframe id="iframe-container" name="iframe-container"></iframe>
+</body>
+</html>
+templates/graph.html
+html
+Copiar código
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gráficos Generados</title>
+</head>
+<body>
+    {{.}}
+</body>
+</html>
+Ventajas de Esta Estructura
+Separación de responsabilidades: Las funciones de manejo de rutas, generación de gráficos y acceso a la base de datos están organizadas en archivos separados.
+Facilidad de mantenimiento: La estructura modular permite modificar partes específicas sin afectar todo el proyecto.
+Reutilización: Las funciones para gráficos pueden usarse en otros proyectos.
+
+
+
+
+

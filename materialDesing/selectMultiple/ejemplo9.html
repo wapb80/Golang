@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filtros con Checkboxes y Efectos</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .custom-select {
+            position: relative;
+            cursor: pointer;
+            border: 1px solid #ced4da;
+            padding: 8px 12px;
+            border-radius: 4px;
+            background-color: #fff;
+            width: 100%;
+        }
+
+        .options-container {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: #fff;
+            z-index: 10;
+            padding: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .custom-select.open .options-container {
+            display: block;
+            transform: scaleY(1);
+        }
+
+        .form-check {
+            margin-bottom: 5px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container my-4">
+    <h1 class="mb-4">Filtros Profesionales</h1>
+
+    <!-- Botón para mostrar los filtros -->
+    <button id="showFiltersBtn" class="btn btn-primary mb-3">Mostrar Filtros</button>
+
+    <div class="card" id="filtersCard">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Filtros</h5>
+            <button class="btn btn-outline-secondary btn-sm" id="closeFiltersBtn">Cerrar</button>
+        </div>
+        <div class="card-body">
+            <form id="filtersForm">
+                <div class="row g-3">
+                    <!-- Categorías -->
+                    <div class="col-md-4">
+                        <label class="form-label">Categorías:</label>
+                        <div class="position-relative custom-select" id="customSelect">
+                            <span id="selectedText">Seleccionar Categorías</span>
+                            <div class="options-container">
+                                <div class="form-check">
+                                    <input class="form-check-input category-checkbox" type="checkbox" value="Electrónica" id="electronics">
+                                    <label class="form-check-label" for="electronics">Electrónica</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input category-checkbox" type="checkbox" value="Ropa" id="clothing">
+                                    <label class="form-check-label" for="clothing">Ropa</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input category-checkbox" type="checkbox" value="Libros" id="books">
+                                    <label class="form-check-label" for="books">Libros</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Otros filtros -->
+
+                </div>
+                <div class="text-end mt-3">
+                    <button type="submit" class="btn btn-success">Aplicar Filtros</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="mt-4">
+        <h5>Resultados:</h5>
+        <div id="results" class="alert alert-secondary">No hay resultados. Aplica algún filtro.</div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const customSelect = document.getElementById('customSelect');
+    const optionsContainer = customSelect.querySelector('.options-container');
+    const selectedText = document.getElementById('selectedText');
+    const filtersCard = document.getElementById('filtersCard');
+    const closeFiltersBtn = document.getElementById('closeFiltersBtn');
+    const showFiltersBtn = document.getElementById('showFiltersBtn');
+
+    // Mostrar/Ocultar opciones al hacer clic en el select
+    customSelect.addEventListener('click', (e) => {
+        e.stopPropagation();
+        customSelect.classList.toggle('open');
+    });
+
+    // Actualizar texto del select con las opciones seleccionadas
+    optionsContainer.addEventListener('change', () => {
+        const selectedOptions = Array.from(
+            optionsContainer.querySelectorAll('.category-checkbox:checked')
+        ).map(option => option.value);
+        selectedText.textContent = selectedOptions.length > 0
+            ? selectedOptions.join(', ')
+            : 'Seleccionar Categorías';
+    });
+
+    // Cerrar las opciones si se hace clic fuera
+    document.addEventListener('click', (e) => {
+        if (!customSelect.contains(e.target)) {
+            customSelect.classList.remove('open');
+        }
+    });
+
+    // Manejador del botón "Cerrar"
+    closeFiltersBtn.addEventListener('click', () => {
+        filtersCard.classList.add('hidden');
+    });
+
+    // Manejador del botón "Mostrar Filtros"
+    showFiltersBtn.addEventListener('click', () => {
+        filtersCard.classList.remove('hidden');
+    });
+
+    // Manejador de envío de formulario
+    document.getElementById('filtersForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const filters = {};
+        formData.forEach((value, key) => {
+            if (value) filters[key] = value;
+        });
+
+        const selectedOptions = Array.from(
+            optionsContainer.querySelectorAll('.category-checkbox:checked')
+        ).map(option => option.value);
+
+        if (selectedOptions.length > 0) {
+            filters.categories = selectedOptions;
+        }
+
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.textContent = `Filtros aplicados: ${JSON.stringify(filters, null, 2)}`;
+        resultsDiv.className = "alert alert-success";
+    });
+</script>
+</body>
+</html>

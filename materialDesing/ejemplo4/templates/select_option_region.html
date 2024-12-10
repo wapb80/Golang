@@ -1,0 +1,18 @@
+<!-- Provincias -->
+<div class="menu-item">
+    <label>Provincia</label>
+    <select name="provincia" id="Provincia" hx-get="/comunas" hx-target="#Comuna" hx-trigger="change">
+        {{range .Options}}
+            <option value="{{.ID}}">{{.Nombre}}</option>
+        {{end}}
+    </select>
+  </div>
+
+  <!-- Comunas -->
+  <div class="menu-item">
+    <label>Comuna</label>
+    <select name="comuna" id="Comuna">
+        <option value="0" disabled selected>Todas</option>
+    </select>
+  </div>
+</div>

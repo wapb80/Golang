@@ -1,0 +1,323 @@
+ a continuación te muestro cómo modificar el ejemplo anterior para incluir dos selectores: uno para seleccionar el sexo y otro para seleccionar la nacionalidad. Dependiendo de los valores seleccionados, se generará un gráfico.
+Estructura del Proyecto
+La estructura del proyecto sigue siendo la misma:
+text
+/mi-aplicacion
+│
+├── main.go
+├── templates
+│   └── index.html
+└── go.mod
+
+Paso 1: Modificar el archivo index.html
+Actualiza el archivo index.html en la carpeta templates con el siguiente contenido:
+xml
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejemplo de Gráficos con Go y Memcached</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.3/htmx.min.js"></script>
+</head>
+<body>
+    <h1>Generador de Gráficos</h1>
+    <div style="display: flex;">
+        <div style="width: 200px;">
+            <label for="sexo">Sexo:</label>
+            <select id="sexo" name="sexo" hx-get="/loadChart" hx-target="#contenidoHtml" hx-include="[name='nacionalidad']">
+                <option value="">Seleccione</option>
+                <option value="masculino">Masculino</option>
+                <option value="femenino">Femenino</option>
+            </select>
+
+            <label for="nacionalidad">Nacionalidad:</label>
+            <select id="nacionalidad" name="nacionalidad" hx-get="/loadChart" hx-target="#contenidoHtml" hx-include="[name='sexo']">
+                <option value="">Seleccione</option>
+                <option value="argentino">Argentino</option>
+                <option value="chileno">Chileno</option>
+                <option value="colombiano">Colombiano</option>
+            </select>
+        </div>
+        <div id="contenidoHtml" style="margin-left: 20px;"></div>
+    </div>
+</body>
+</html>
+
+Paso 2: Modificar el archivo main.go
+Actualiza el archivo main.go con el siguiente contenido:
+go
+package main
+
+import (
+    "database/sql"
+    "fmt"
+    "html/template"
+    "log"
+    "net/http"
+    "sync"
+
+    "github.com/bradfitz/gomemcache/memcache"
+    _ "github.com/lib/pq" // Driver para PostgreSQL
+)
+
+var (
+    memc *memcache.Client
+    mu   sync.Mutex
+    db   *sql.DB
+)
+
+func init() {
+    // Inicializa Memcached
+    memc = memcache.New("localhost:11211") // Cambia esto si tu servidor Memcached está en otra dirección
+
+    // Inicializa la base de datos PostgreSQL
+    var err error
+    connStr := "user=tu_usuario dbname=tu_base_de_datos sslmode=disable" // Ajusta esto según tu configuración
+    db, err = sql.Open("postgres", connStr)
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+
+func main() {
+    http.HandleFunc("/", indexHandler)
+    http.HandleFunc("/loadChart", loadChartHandler)
+
+    fmt.Println("Servidor iniciado en http://localhost:8080")
+    log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+    tmpl := template.Must(template.ParseFiles("templates/index.html"))
+    
+    if err := tmpl.Execute(w, nil); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+}
+
+func loadChartHandler(w http.ResponseWriter, r *http.Request) {
+    sexo := r.URL.Query().Get("sexo")
+    nacionalidad := r.URL.Query().Get("nacionalidad")
+
+    mu.Lock()
+    defer mu.Unlock()
+
+    var htmlContent string
+
+    // Verifica si el HTML ya está en caché
+    cacheKey := fmt.Sprintf("%s-%s", sexo, nacionalidad)
+    
+    if item, err := memc.Get(cacheKey); err == nil {
+        htmlContent = string(item.Value)
+        fmt.Println("Cargando desde Memcached:", cacheKey)
+    } else {
+        // Simula la consulta a la base de datos para obtener datos del gráfico
+        data, err := fetchChartData(sexo, nacionalidad)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+
+        // Genera el gráfico basado en los datos obtenidos
+        htmlContent, err = generateChart(sexo, nacionalidad, data)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+
+        // Almacena el HTML generado en Memcached
+        memc.Set(&memcache.Item{Key: cacheKey, Value: []byte(htmlContent)})
+        fmt.Println("Almacenando en Memcached:", cacheKey)
+    }
+
+    w.Header().Set("Content-Type", "text/html")
+    w.Write([]byte(htmlContent))
+}
+
+func fetchChartData(sexo string, nacionalidad string) ([]float64, error) {
+	// Aquí deberías realizar una consulta a tu base de datos PostgreSQL.
+	// Para este ejemplo, generaremos datos simulados.
+	var data []float64
+
+	// Simulación de datos basados en los parámetros seleccionados.
+	if sexo == "masculino" && nacionalidad == "argentino" {
+		data = []float64{10, 20, 30}
+	} else if sexo == "femenino" && nacionalidad == "argentino" {
+		data = []float64{15, 25, 35}
+	} else if sexo == "masculino" && nacionalidad == "chileno" {
+		data = []float64{5, 15, 25}
+	} else if sexo == "femenino" && nacionalidad == "chileno" {
+		data = []float64{10, 20, 30}
+	} else if sexo == "masculino" && nacionalidad == "colombiano" {
+		data = []float64{20, 30, 40}
+	} else if sexo == "femenino" && nacionalidad == "colombiano" {
+		data = []float64{25, 35, 45}
+	} else {
+		return nil, fmt.Errorf("no hay datos disponibles para esta combinación")
+	}
+
+	return data, nil
+}
+
+func generateChart(sexo string, nacionalidad string, data []float64) (string, error) {
+	// Aquí se puede usar go-echarts para generar gráficos.
+	// Por simplicidad, solo devolveremos un HTML básico.
+	return fmt.Sprintf("<h3>Gráfico para %s %s</h3><p>Datos: %v</p>", sexo, nacionalidad, data), nil
+}
+
+Descripción de las Modificaciones
+HTML Modificado:
+Se han añadido dos selectores (select) para elegir el sexo y la nacionalidad. Cada vez que se cambia un selector, se hace una solicitud al servidor para cargar los gráficos correspondientes.
+Manejador loadChartHandler Modificado:
+La clave de caché ahora se genera combinando los valores seleccionados (sexo y nacionalidad).
+Se simula la consulta a la base de datos dependiendo de los valores seleccionados en los selectores.
+Función fetchChartData:
+Esta función simula la recuperación de datos basados en las selecciones del usuario. En un caso real, deberías realizar consultas a tu base de datos PostgreSQL.
+Generación del Gráfico:
+La función generateChart genera un simple HTML que muestra los datos basados en las selecciones del usuario.
+
+
+
+###################################################################################################################################################
+
+
+
+Ejemplo de Generación de cacheKey
+Si tienes 10 selectores, puedes construir la clave de caché concatenando los valores seleccionados. Aquí hay un ejemplo simplificado sobre cómo podrías hacerlo:
+go
+func loadChartHandler(w http.ResponseWriter, r *http.Request) {
+    sexo := r.URL.Query().Get("sexo")
+    nacionalidad := r.URL.Query().Get("nacionalidad")
+    edad := r.URL.Query().Get("edad") // Ejemplo de un tercer selector
+    // ... Agrega más selectores según sea necesario
+
+    mu.Lock()
+    defer mu.Unlock()
+
+    // Genera una clave de caché única basada en todos los selectores
+    cacheKey := fmt.Sprintf("%s-%s-%s", sexo, nacionalidad, edad) // Agrega más valores según sea necesario
+
+    var htmlContent string
+
+    if item, err := memc.Get(cacheKey); err == nil {
+        htmlContent = string(item.Value)
+        fmt.Println("Cargando desde Memcached:", cacheKey)
+    } else {
+        // Lógica para obtener datos y generar el gráfico
+        data, err := fetchChartData(sexo, nacionalidad, edad) // Asegúrate de que esta función acepte los nuevos parámetros
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+
+        htmlContent, err = generateChart(sexo, nacionalidad, edad, data) // Ajusta esta función para aceptar nuevos parámetros
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+
+        memc.Set(&memcache.Item{Key: cacheKey, Value: []byte(htmlContent)})
+        fmt.Println("Almacenando en Memcached:", cacheKey)
+    }
+
+    w.Header().Set("Content-Type", "text/html")
+    w.Write([]byte(htmlContent))
+}
+
+Consideraciones
+Número de Selectores: Si tienes muchos selectores (digamos 10), asegúrate de que la combinación de todos ellos no genere claves excesivamente largas. Esto podría afectar el rendimiento y la legibilidad.
+Formato de la Clave: Utiliza un formato consistente para la clave (por ejemplo, usando guiones o guiones bajos para separar los valores) para facilitar su manejo.
+Manejo de Combinaciones: Cada combinación única de valores debe ser considerada como una entrada separada en el caché. Esto significa que si un usuario selecciona una combinación diferente, se generará una nueva entrada.
+Limpieza del Caché: Considera implementar una estrategia para limpiar o invalidar entradas en el caché si los datos subyacentes cambian con frecuencia.
+Pruebas: Realiza pruebas exhaustivas para asegurarte de que las combinaciones funcionan como se espera y que el caché se comporta correctamente con las diferentes entradas.
+Siguiendo este enfoque podrás manejar múltiples selectores eficientemente y optimizar el rendimiento de tu aplicación mediante el uso efectivo del caché.
+
+
+
+
+###################################################################################################################################################
+
+
+
+Para usar Memcached en otra función de tu código donde necesitas almacenar resultados de consultas SQL, puedes seguir un enfoque similar al que ya hemos discutido. Aquí te muestro cómo hacerlo con ejemplos claros.
+Almacenamiento de Consultas SQL en Memcached
+Cuando deseas almacenar el resultado de una consulta SQL en Memcached, el proceso es el siguiente:
+Consulta a Memcached: Primero, verifica si el resultado de la consulta ya está almacenado en Memcached.
+Consulta a la Base de Datos: Si no está en caché, realiza la consulta a la base de datos.
+Almacena el Resultado: Guarda el resultado en Memcached para futuras consultas.
+Ejemplo de Código
+Aquí tienes un ejemplo que muestra cómo implementar esto en una función:
+go
+func getUserData(userID string) (string, error) {
+    mu.Lock()
+    defer mu.Unlock()
+
+    // Genera una clave única para la consulta
+    cacheKey := fmt.Sprintf("user_%s", userID)
+
+    // Verifica si los datos están en caché
+    if item, err := memc.Get(cacheKey); err == nil {
+        fmt.Println("Cargando desde Memcached:", cacheKey)
+        return string(item.Value), nil // Retorna los datos del caché
+    }
+
+    // Si no están en caché, realiza la consulta a la base de datos
+    var userData string
+    query := "SELECT data FROM users WHERE id = $1" // Asegúrate de ajustar esta consulta según tu esquema
+    err := db.QueryRow(query, userID).Scan(&userData)
+    if err != nil {
+        return "", err // Maneja el error si no se encuentra el usuario
+    }
+
+    // Almacena el resultado en Memcached con un tiempo de expiración (por ejemplo, 3600 segundos)
+    memc.Set(&memcache.Item{Key: cacheKey, Value: []byte(userData), Expiration: 3600})
+    fmt.Println("Almacenando en Memcached:", cacheKey)
+
+    return userData, nil
+}
+
+Descripción del Código
+Generación de cacheKey: Se genera una clave única para cada usuario utilizando su userID. Esto asegura que cada usuario tenga su propio espacio en el caché.
+Consulta a Memcached: Se intenta obtener los datos del usuario desde Memcached. Si se encuentran, se devuelven inmediatamente.
+Consulta a la Base de Datos: Si los datos no están en caché (err será nil), se realiza una consulta a la base de datos para obtener los datos del usuario.
+Almacenamiento en Memcached: Después de recuperar los datos de la base de datos, se almacenan en Memcached con un tiempo de expiración especificado (en este caso, 3600 segundos).
+Consideraciones
+Claves Únicas: Asegúrate de que cada clave que generes sea única y representativa del contenido que almacenas. Esto es crucial para evitar colisiones y asegurar que los datos correctos sean recuperados.
+Manejo de Errores: Siempre maneja los errores adecuadamente, especialmente al realizar consultas a la base de datos.
+Expiración: Ajusta el tiempo de expiración según tus necesidades; esto puede ayudar a mantener los datos actualizados y evitar que se sirvan datos obsoletos.
+Concurrencia: Usa mutexes como se muestra para proteger las operaciones sobre Memcached y evitar condiciones de carrera.
+Este enfoque te permitirá utilizar Memcached eficientemente para almacenar resultados de consultas SQL y mejorar el rendimiento general de tu aplicación al reducir la carga sobre la base de datos.
+
+
+
+
+###################################################################################################################################################
+
+
+
+
+
+
+
+
+
+###################################################################################################################################################
+
+
+
+
+
+
+
+
+###################################################################################################################################################
+
+
+
+
+
+
+
+

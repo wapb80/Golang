@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filtro con Checkboxes y Efectos</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .custom-select {
+            position: relative;
+            cursor: pointer;
+            border: 1px solid #ced4da;
+            padding: 8px 12px;
+            border-radius: 4px;
+            background-color: #fff;
+            width: 100%;
+        }
+
+        .options-container {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: #fff;
+            z-index: 10;
+            padding: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .custom-select.open .options-container {
+            display: block;
+            transform: scaleY(1);
+        }
+
+        .form-check {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="container my-4">
+    <h1 class="mb-4">Filtro con Checkboxes y Efectos</h1>
+
+    <!-- Simulación del Select -->
+    <div class="position-relative custom-select" id="customSelect">
+        <span id="selectedText">Seleccionar Categorías</span>
+        <div class="options-container">
+            <div class="form-check">
+                <input class="form-check-input category-checkbox" type="checkbox" value="Electrónica" id="electronics">
+                <label class="form-check-label" for="electronics">Electrónica</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input category-checkbox" type="checkbox" value="Ropa" id="clothing">
+                <label class="form-check-label" for="clothing">Ropa</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input category-checkbox" type="checkbox" value="Libros" id="books">
+                <label class="form-check-label" for="books">Libros</label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const customSelect = document.getElementById('customSelect');
+    const optionsContainer = customSelect.querySelector('.options-container');
+    const selectedText = document.getElementById('selectedText');
+
+    // Mostrar/Ocultar opciones al hacer clic en el select
+    customSelect.addEventListener('click', (e) => {
+        e.stopPropagation(); // Evitar que el clic cierre las opciones
+        customSelect.classList.toggle('open');
+    });
+
+    // Actualizar texto del select con las opciones seleccionadas
+    optionsContainer.addEventListener('change', () => {
+        const selectedOptions = Array.from(
+            optionsContainer.querySelectorAll('.category-checkbox:checked')
+        ).map(option => option.value);
+        selectedText.textContent = selectedOptions.length > 0
+            ? selectedOptions.join(', ')
+            : 'Seleccionar Categorías';
+    });
+
+    // Cerrar las opciones si se hace clic fuera
+    document.addEventListener('click', (e) => {
+        if (!customSelect.contains(e.target)) {
+            customSelect.classList.remove('open');
+        }
+    });
+</script>
+</body>
+</html>

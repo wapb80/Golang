@@ -1,0 +1,190 @@
+¡Entendido! Para enviar los parámetros seleccionados (por ejemplo, edad, género, nacionalidad) al servidor y usar esos valores para generar los gráficos dinámicamente, puedes agregar un formulario con select en el frontend y enviar esos datos al servidor utilizando HTMX o AJAX.
+
+Paso 1: Formulario de selección en el frontend (HTML)
+Modificamos el archivo index.html para que tenga tres campos select (para edad, género y nacionalidad). Cuando el usuario selecciona las opciones y presiona el botón "Generar Gráficos", los parámetros se enviarán al servidor.
+
+1.1 Modificación de index.html (Formulario de selección)
+html
+Copiar código
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar Gráficos Dinámicos</title>
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script> <!-- Incluir HTMX -->
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        iframe {
+            width: 80%;
+            height: 800px; /* Altura del iframe */
+            border: 1px solid #ccc; /* Borde del iframe */
+            margin-top: 20px; /* Espaciado superior */
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        select, label {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Generar Gráficos Dinámicos</h1>
+
+<!-- Formulario de selección de parámetros -->
+<form id="chartForm">
+    <label for="age">Edad:</label>
+    <select id="age" name="age">
+        <option value="18-25">18-25</option>
+        <option value="26-35">26-35</option>
+        <option value="36-45">36-45</option>
+        <option value="46+">46+</option>
+    </select>
+
+    <label for="gender">Género:</label>
+    <select id="gender" name="gender">
+        <option value="masculino">Masculino</option>
+        <option value="femenino">Femenino</option>
+    </select>
+
+    <label for="nationality">Nacionalidad:</label>
+    <select id="nationality" name="nationality">
+        <option value="chileno">Chileno</option>
+        <option value="extranjero">Extranjero</option>
+    </select>
+
+    <button type="button" id="loadCharts" onclick="generateCharts()">Generar Gráficos</button>
+</form>
+
+<iframe id="chartIframe" name="chartIframe"></iframe>
+
+<script>
+    function generateCharts() {
+        // Obtiene los valores de los select
+        const formData = new FormData(document.getElementById('chartForm'));
+
+        // Convierte los datos del formulario en una URL de parámetros
+        const params = new URLSearchParams();
+        formData.forEach((value, key) => {
+            params.append(key, value);
+        });
+
+        // Cambiar el src del iframe para cargar los gráficos generados con los parámetros
+        document.getElementById('chartIframe').src = "/generate-charts?" + params.toString();
+    }
+</script>
+
+</body>
+</html>
+Explicación del frontend:
+Formulario de selección (select): Los usuarios seleccionan la edad, el género y la nacionalidad de los tres campos select.
+Botón "Generar Gráficos": Al presionar el botón, se ejecuta la función generateCharts():
+Recoge los valores del formulario usando FormData.
+Convierte estos valores en parámetros de URL (params) usando URLSearchParams.
+Luego, cambia el src del iframe para incluir estos parámetros en la URL.
+Paso 2: Backend en Go (Recibir parámetros y generar gráficos)
+El backend debe recibir estos parámetros (age, gender, nationality) y usarlos para generar los gráficos de acuerdo a los datos.
+
+2.1 Modificación del archivo Go para recibir parámetros
+go
+Copiar código
+package main
+
+import (
+    "fmt"
+    "github.com/go-charts/charts"
+    "net/http"
+    "html/template"
+    "sync"
+    "net/url"
+)
+
+var templates = template.Must(template.ParseFiles("templates/index.html", "templates/graph.html"))
+
+func main() {
+    http.HandleFunc("/", indexHandler)
+    http.HandleFunc("/generate-charts", generateChartsHandler)
+
+    http.ListenAndServe(":8080", nil)
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+    templates.ExecuteTemplate(w, "index.html", nil)
+}
+
+func generateChartsHandler(w http.ResponseWriter, r *http.Request) {
+    // Obtener parámetros de la URL
+    age := r.URL.Query().Get("age")
+    gender := r.URL.Query().Get("gender")
+    nationality := r.URL.Query().Get("nationality")
+
+    // Mostrar los parámetros recibidos (opcional, solo para depuración)
+    fmt.Printf("Edad: %s, Género: %s, Nacionalidad: %s\n", age, gender, nationality)
+
+    // Usamos gorutinas para generar los gráficos
+    var wg sync.WaitGroup
+    chartsHtml := ""
+
+    // Llamar a las funciones de gráficos con los parámetros
+    wg.Add(3)
+    go func() {
+        defer wg.Done()
+        chartsHtml += "<div>" + generateBarChart(age, gender, nationality) + "</div>"
+    }()
+    go func() {
+        defer wg.Done()
+        chartsHtml += "<div>" + generateLineChart(age, gender, nationality) + "</div>"
+    }()
+    go func() {
+        defer wg.Done()
+        chartsHtml += "<div>" + generatePieChart(age, gender, nationality) + "</div>"
+    }()
+
+    // Esperar a que todas las gorutinas terminen
+    wg.Wait()
+
+    templates.ExecuteTemplate(w, "graph.html", chartsHtml)
+}
+
+// Función para generar gráfico de barras con parámetros
+func generateBarChart(age, gender, nationality string) string {
+    chart := charts.NewChart()
+    // Ejemplo de cómo los parámetros pueden modificar el gráfico
+    chart.AddData("Data", []int{10, 20, 30, 40, 50})
+    return chart.RenderHTML()
+}
+
+// Función para generar gráfico de líneas con parámetros
+func generateLineChart(age, gender, nationality string) string {
+    chart := charts.NewChart()
+    chart.AddData("Data", []int{5, 10, 15, 20, 25})
+    return chart.RenderHTML()
+}
+
+// Función para generar gráfico de pastel con parámetros
+func generatePieChart(age, gender, nationality string) string {
+    chart := charts.NewChart()
+    chart.AddData("Category A", []int{30})
+    chart.AddData("Category B", []int{70})
+    return chart.RenderHTML()
+}
+Explicación del backend:
+Obtener los parámetros de la URL: En la función generateChartsHandler, se recogen los parámetros de la URL (age, gender, nationality) con r.URL.Query().Get().
+Generación de los gráficos: Los parámetros se pasan a las funciones que generan los gráficos (generateBarChart, generateLineChart, generatePieChart). En este caso, puedes utilizar estos parámetros para modificar los datos que se muestran en los gráficos (esto es solo un ejemplo; puedes utilizar los parámetros para filtrar o modificar los datos reales de tu aplicación).
+Uso de gorutinas: Las tres funciones de gráficos se ejecutan de manera concurrente utilizando gorutinas y se combinan en un solo bloque HTML.
+Paso 3: Mostrar los gráficos
+Una vez que se procesan los gráficos en el backend, se envía el HTML generado a la plantilla graph.html, que los renderiza dentro del iframe.
+
+Resultado:
+Al presionar el botón "Generar Gráficos", los parámetros seleccionados (edad, género, nacionalidad) se envían al servidor.
+El servidor genera los tres gráficos basados en estos parámetros utilizando gorutinas para la concurrencia.
+Los gráficos se cargan en el único iframe que se muestra en la página.

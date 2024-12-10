@@ -1,0 +1,219 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"html/template"
+	"math/rand"
+	"net/http"
+	"time"
+
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/opts"
+)
+
+// Estructura para pasar datos a la plantilla
+type PageData struct {
+	LineChartHTML template.HTML
+	BarChartHTML  template.HTML
+}
+
+// Función para generar el gráfico de línea
+func generateLineChart() (template.HTML, error) {
+	// Crear un gráfico de línea
+	line := charts.NewLine()
+
+	// Configurar las opciones del gráfico
+	line.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{Title: "Gráfico de Línea con go-echarts"}),
+	)
+
+	// Crear datos aleatorios para el gráfico
+	source := rand.NewSource(time.Now().UnixNano())
+	rng := rand.New(source)
+
+	xAxisData := []string{"Lunes", "Martes", "Miércoles", "Jueves", "Viernes"}
+	var yAxisData []opts.LineData
+	for i := 0; i < len(xAxisData); i++ {
+		yAxisData = append(yAxisData, opts.LineData{Value: rng.Intn(50) + 10})
+	}
+
+	// Añadir los datos al gráfico
+	line.SetXAxis(xAxisData).AddSeries("Serie 1", yAxisData)
+
+	// Serializar el gráfico como JSON
+	optionsJSON, err := json.Marshal(line.JSON())
+	if err != nil {
+		return "", fmt.Errorf("error al convertir las opciones del gráfico a JSON: %v", err)
+	}
+
+	// Log para confirmar el JSON generado
+	//fmt.Printf("Opciones del gráfico (JSON): %s\n", optionsJSON)
+
+	// Crear el HTML para el contenedor del gráfico
+	htmlContent := fmt.Sprintf(`
+		<div class="container">
+			<div class="item" id="line-chart" style="width:900px;height:500px;"></div>
+		</div>
+		<script src="https://go-echarts.github.io/go-echarts-assets/assets/echarts.min.js"></script>
+		<script type="text/javascript">
+			document.addEventListener("DOMContentLoaded", function() {
+				let lineChart = echarts.init(document.getElementById('line-chart'));
+				let options = %s;
+				lineChart.setOption(options);
+			});
+		</script>
+	`, optionsJSON)
+
+	return template.HTML(htmlContent), nil
+}
+
+// Función para generar el gráfico de barras
+func generateBarChart() (template.HTML, error) {
+	// Crear un gráfico de barras
+	bar := charts.NewBar()
+
+	// Configurar las opciones del gráfico
+	bar.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{Title: "Gráfico de Barras con go-echarts"}),
+	)
+
+	// Datos del eje X (días de la semana)
+	xAxisData := []string{"Lunes", "Martes", "Miércoles", "Jueves", "Viernes"}
+
+	// Datos aleatorios para el eje Y
+	var yAxisData []opts.BarData
+	source := rand.NewSource(time.Now().UnixNano())
+	rng := rand.New(source)
+	for i := 0; i < len(xAxisData); i++ {
+		yAxisData = append(yAxisData, opts.BarData{Value: rng.Intn(50) + 10}) // Valores entre 10 y 59
+	}
+
+	// Añadir los datos al gráfico
+	bar.SetXAxis(xAxisData).AddSeries("Serie 1", yAxisData)
+
+	// Renderizar el gráfico en un buffer
+	var buffer bytes.Buffer
+	if err := bar.Render(&buffer); err != nil {
+		return "", fmt.Errorf("error al renderizar el gráfico: %v", err)
+	}
+
+	return template.HTML(buffer.String()), nil
+}
+
+// Función para renderizar la página principal
+func mainPage(w http.ResponseWriter, r *http.Request) {
+	// Generar los gráficos
+	lineChartHTML, err := generateLineChart()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al generar el gráfico de líneas: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	barChartHTML, err := generateBarChart()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al generar el gráfico de barras: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Cargar la plantilla
+	tmpl, err := template.ParseFiles("index.html")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al cargar la plantilla: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Renderizar la plantilla
+	pageData := PageData{
+		LineChartHTML: lineChartHTML,
+		BarChartHTML:  barChartHTML,
+	}
+	if err := tmpl.Execute(w, pageData); err != nil {
+		// Evitar escribir después de un fallo
+		fmt.Printf("Error al renderizar la plantilla: %v\n", err)
+		return
+	}
+}
+
+// Función para actualizar el gráfico de líneas
+func updateLineChart(w http.ResponseWriter, r *http.Request) {
+	// Crear un gráfico de línea nuevo
+	line := charts.NewLine()
+
+	// Configurar las opciones del gráfico
+	line.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{Title: "Gráfico de Línea Actualizado"}),
+	)
+
+	// Crear datos aleatorios para el gráfico
+	source := rand.NewSource(time.Now().UnixNano())
+	rng := rand.New(source)
+
+	xAxisData := []string{"Lunes", "Martes", "Miércoles", "Jueves", "Viernes"}
+	var yAxisData []opts.LineData
+	for i := 0; i < len(xAxisData); i++ {
+		yAxisData = append(yAxisData, opts.LineData{Value: rng.Intn(50) + 10})
+	}
+
+	// Añadir los datos al gráfico como una nueva serie
+	line.SetXAxis(xAxisData).AddSeries("Serie Actualizada", yAxisData)
+
+	// Generar solo el div y el script con los datos nuevos
+	optionsJSON, err := json.Marshal(line.JSON())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al convertir las opciones del gráfico a JSON: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Respuesta solo con el contenido relevante
+	htmlContent := fmt.Sprintf(`
+		<div class="item" id="line-chart" style="width:900px;height:500px;"></div>
+		<script type="text/javascript">
+			// Asegurarnos de reinicializar el gráfico para cada actualización
+			let lineChart = echarts.init(document.getElementById('line-chart'));
+			let options = %s;
+			lineChart.setOption(options, true);  // El parámetro 'true' asegura la actualización completa
+		</script>
+	`, optionsJSON)
+
+	// Enviar el HTML al cliente
+	fmt.Fprint(w, htmlContent)
+}
+
+func HomeHandler(w http.ResponseWriter, r *http.Request) {
+	templates.ExecuteTemplate(w, "base.html", nil)
+}
+
+// Función para formatear fechas
+func formatFecha(t time.Time) string {
+	// return t.Format("2006/01/02")
+	return t.UTC().Format("2006-01-02")
+
+}
+
+var templates *template.Template
+
+func main() {
+	// Define el FuncMap con las funciones personalizadas
+	funcMap := template.FuncMap{
+		"formatFecha": formatFecha,
+	}
+	templates = template.Must(template.New("").Funcs(funcMap).ParseGlob("html/*.html"))
+
+	r := http.NewServeMux()
+	// Usa New y Funcs para aplicar el FuncMap antes de cargar las plantillas
+
+	// Ruta para la página principal
+	r.HandleFunc("GET /", mainPage)
+	r.HandleFunc("GET /base", HomeHandler)
+
+	// Ruta para actualizar solo el gráfico de líneas
+	r.HandleFunc("GET /update-line-chart", updateLineChart)
+
+	// Iniciar el servidor
+	fmt.Println("Servidor ejecutándose en http://localhost:8080")
+	if err := http.ListenAndServe(":8080", r); err != nil {
+		fmt.Printf("Error al iniciar el servidor: %v\n", err)
+	}
+}

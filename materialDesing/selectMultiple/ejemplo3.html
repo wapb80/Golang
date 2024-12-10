@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filtros Profesionales Mejorados</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container my-4">
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5 class="card-title">Filtros Mejorados</h5>
+        </div>
+        <div class="card-body">
+            <form id="filtersForm">
+                <!-- Selección de Categorías -->
+                <div class="mb-3">
+                    <label for="categories" class="form-label">Categorías:</label>
+                    <div>
+                        <button type="button" class="btn btn-outline-primary" id="selectCategoriesBtn">
+                            Seleccionar Categorías
+                        </button>
+                        <input type="text" id="selectedCategories" class="form-control mt-2" readonly
+                               placeholder="Ninguna categoría seleccionada">
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-success">Aplicar Filtros</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para seleccionar categorías -->
+<div class="modal fade" id="categoriesModal" tabindex="-1" aria-labelledby="categoriesModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="categoriesModalLabel">Selecciona Categorías</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-check">
+                    <input class="form-check-input category-checkbox" type="checkbox" value="Electrónica" id="electronics">
+                    <label class="form-check-label" for="electronics">Electrónica</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input category-checkbox" type="checkbox" value="Ropa" id="clothing">
+                    <label class="form-check-label" for="clothing">Ropa</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input category-checkbox" type="checkbox" value="Libros" id="books">
+                    <label class="form-check-label" for="books">Libros</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="saveCategoriesBtn" data-bs-dismiss="modal">
+                    Guardar Selección
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle (incluye Popper) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const selectCategoriesBtn = document.getElementById('selectCategoriesBtn');
+    const categoriesModal = new bootstrap.Modal(document.getElementById('categoriesModal'));
+    const saveCategoriesBtn = document.getElementById('saveCategoriesBtn');
+    const selectedCategories = document.getElementById('selectedCategories');
+
+    // Abrir el modal al hacer clic en el botón
+    selectCategoriesBtn.addEventListener('click', () => {
+        categoriesModal.show();
+    });
+
+    // Guardar las categorías seleccionadas
+    saveCategoriesBtn.addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('.category-checkbox:checked');
+        const selected = Array.from(checkboxes).map(checkbox => checkbox.value);
+        selectedCategories.value = selected.length ? selected.join(', ') : "Ninguna categoría seleccionada";
+    });
+</script>
+</body>
+</html>

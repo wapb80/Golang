@@ -1,0 +1,11 @@
+{{define "products"}}
+  <h2>Listado de Productos</h2>
+  <ul>
+    {{range .Products}}
+      <li>
+        <span>{{.Name}}</span> - ${{.Price}} 
+        <a href="/add-to-cart?id={{.ID}}">Agregar al carrito</a>
+      </li>
+    {{end}}
+  </ul>
+{{end}}

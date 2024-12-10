@@ -1,0 +1,11 @@
+<div id="content1">
+    <h2>Productos Disponibles</h2>
+    <ul>
+        {{range .Products}}
+            <li>
+                {{.Name}} - ${{.Price}} 
+                <button hx-post="/add-to-cart/{{.ID}}" hx-target="#content2" hx-swap="innerHTML">Agregar al Carrito</button>
+            </li>
+        {{end}}
+    </ul>
+</div>

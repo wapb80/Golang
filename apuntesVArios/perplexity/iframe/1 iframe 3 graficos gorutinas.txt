@@ -1,0 +1,215 @@
+Archivo main.go
+Aquí está el código modificado para usar un template para renderizar los gráficos:
+go
+package main
+
+import (
+    "net/http"
+    "math/rand"
+    "github.com/go-echarts/go-echarts/v2/charts"
+    "github.com/go-echarts/go-echarts/v2/opts"
+    "github.com/bradfitz/gomemcache/memcache"
+    "html/template"
+    "sync"
+)
+
+var templates = template.Must(template.ParseFiles("templates/index.html", "templates/charts.html"))
+
+var mc *memcache.Client
+
+func main() {
+    mc = memcache.New("localhost:11211") // Conectar a Memcached
+    http.HandleFunc("/", indexHandler)
+    http.HandleFunc("/generate", generateChartsHandler)
+    http.ListenAndServe(":8080", nil)
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+    templates.ExecuteTemplate(w, "index.html", nil)
+}
+
+func generateChartsHandler(w http.ResponseWriter, r *http.Request) {
+    // Obtener valores seleccionados
+    age := r.FormValue("age")
+    gender := r.FormValue("gender")
+    nationality := r.FormValue("nationality")
+
+    var wg sync.WaitGroup
+    chartHTMLs := make(map[string]string)
+
+    // Generar gráficos en goroutines
+    wg.Add(3)
+
+    go func() {
+        defer wg.Done()
+        chartHTMLs["bar"] = renderBarChart(age, gender, nationality)
+    }()
+
+    go func() {
+        defer wg.Done()
+        chartHTMLs["line"] = renderLineChart(age, gender, nationality)
+    }()
+
+    go func() {
+        defer wg.Done()
+        chartHTMLs["pie"] = renderPieChart(age, gender, nationality)
+    }()
+
+    // Esperar a que todas las goroutines terminen
+    wg.Wait()
+
+    // Almacenar en Memcached (opcional)
+    mc.Set(&memcache.Item{Key: "bar_chart", Value: []byte(chartHTMLs["bar"])})
+    mc.Set(&memcache.Item{Key: "line_chart", Value: []byte(chartHTMLs["line"])})
+    mc.Set(&memcache.Item{Key: "pie_chart", Value: []byte(chartHTMLs["pie"])})
+
+    // Renderizar todos los gráficos en un solo iframe usando un template
+    err := templates.ExecuteTemplate(w, "charts.html", chartHTMLs)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+}
+
+func renderBarChart(age, gender, nationality string) string {
+    bar := charts.NewBar()
+    bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: "Gráfico de Barras"}))
+
+    xAxis := []string{"Grupo 1", "Grupo 2", "Grupo 3"}
+    bar.SetXAxis(xAxis).
+        AddSeries("Datos", generateRandomData())
+
+    return bar.RenderString()
+}
+
+func renderLineChart(age, gender, nationality string) string {
+    line := charts.NewLine()
+    line.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: "Gráfico de Líneas"}))
+
+    xAxis := []string{"Enero", "Febrero", "Marzo"}
+    line.SetXAxis(xAxis).
+        AddSeries("Datos", generateRandomData())
+
+    return line.RenderString()
+}
+
+func renderPieChart(age, gender, nationality string) string {
+    pie := charts.NewPie()
+    pie.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: "Gráfico Circular"}))
+
+    pie.AddSeries("Datos", generatePieData())
+
+    return pie.RenderString()
+}
+
+// Función para generar datos aleatorios para gráficos
+func generateRandomData() []opts.BarData {
+    items := make([]opts.BarData, 0)
+    for i := 0; i < 3; i++ {
+        items = append(items, opts.BarData{Value: rand.Intn(100)})
+    }
+    return items
+}
+
+// Función para generar datos para el gráfico circular
+func generatePieData() []opts.PieData {
+    items := make([]opts.PieData, 0)
+    for i := 0; i < 3; i++ {
+        items = append(items, opts.PieData{Name: "Categoría " + string(i+1), Value: rand.Intn(100)})
+    }
+    return items
+}
+
+Archivo index.html (en la carpeta templates)
+Este archivo contendrá la estructura principal con los selectores y el botón para generar los gráficos.
+xml
+<!DOCTYPE html>
+<html lang="es">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Generar Gráficos Dinámicos</title>
+</head>
+<body>
+
+<h1>Generar Gráficos Dinámicos</h1>
+
+<form id="chartForm">
+   <label for="age">Edad:</label>
+   <select id="age" name="age">
+       <option value="18-25">18-25</option>
+       <option value="26-35">26-35</option>
+       <option value="36-45">36-45</option>
+       <option value="46+">46+</option>
+   </select>
+
+   <label for="gender">Género:</label>
+   <select id="gender" name="gender">
+       <option value="masculino">Masculino</option>
+       <option value="femenino">Femenino</option>
+       <option value="otro">Otro</option>
+   </select>
+
+   <label for="nationality">Nacionalidad:</label>
+   <select id="nationality" name="nationality">
+       <option value="nacionalidad1">Nacionalidad 1</option>
+       <option value="nacionalidad2">Nacionalidad 2</option>
+       <option value="nacionalidad3">Nacionalidad 3</option>
+       <option value="nacionalidad4">Nacionalidad 4</option>
+   </select>
+
+   <button type="button" id="loadCharts">Generar Gráficos</button>
+</form>
+
+<iframe id="chartsFrame" style="width:80%; height:600px; border:none;"></iframe>
+
+<script>
+document.getElementById('loadCharts').addEventListener('click', function() {
+   const form = document.getElementById('chartForm');
+   const formData = new FormData(form);
+   
+   fetch('/generate', {
+       method: 'POST',
+       body: formData,
+   })
+   .then(response => response.text())
+   .then(data => {
+       document.getElementById('chartsFrame').srcdoc = data; // Cargar todos los gráficos en un solo iframe
+   });
+});
+</script>
+
+</body>
+</html>
+
+Archivo charts.html (en la carpeta templates)
+Este archivo contendrá la estructura HTML que se usará para mostrar los gráficos generados.
+xml
+<!DOCTYPE html>
+<html lang="es">
+<head>
+   <meta charset="UTF-8">
+   <title>Gráficos Generados</title>
+   <style>
+       body { font-family: Arial, sans-serif; }
+       .chart { margin-bottom: 20px; }
+   </style>
+</head>
+<body>
+
+<div class="chart">{{ .bar }}</div>
+<div class="chart">{{ .line }}</div>
+<div class="chart">{{ .pie }}</div>
+
+</body>
+</html>
+
+Cómo Funciona
+Uso de Templates:
+Se utiliza un template (charts.html) para renderizar los gráficos generados. Esto hace que el código sea más limpio y modular.
+Generación Concurrente:
+Se utilizan goroutines para generar cada gráfico (barras, líneas y pie) en paralelo. Esto permite que la generación de gráficos no bloquee el manejo de otras solicitudes.
+Renderización en un Solo iframe:
+Todos los gráficos generados se insertan en un único iframe. El HTML para los gráficos se construye utilizando el template y se envía como respuesta al cliente.
+Memcached:
+Se almacena cada gráfico generado en Memcached (esto es opcional y puede ser útil si deseas evitar regenerar gráficos idénticos).

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráficos con Go-echarts</title>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org"></script>
+</head>
+<body>
+    <h1>Gráficos Generados con Go-echarts</h1>
+    
+    <!-- Contenedor exclusivo para el gráfico de líneas -->
+    <div id="line-chart-container">
+        {{.LineChartHTML}}
+    </div>
+
+    <!-- Botón para actualizar el gráfico de líneas -->
+    <button hx-get="/update-line-chart" hx-target="#line-chart-container" hx-swap="innerHTML">
+        Actualizar Gráfico de Líneas
+    </button>
+
+    <h2>Gráfico de Barras</h2>
+    <!-- Contenedor exclusivo para el gráfico de barras -->
+    <div id="bar-chart-container">
+        {{.BarChartHTML}}
+    </div>
+</body>
+</html>

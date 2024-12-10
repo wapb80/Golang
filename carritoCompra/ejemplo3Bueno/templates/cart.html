@@ -1,0 +1,9 @@
+{{define "cart"}}
+<h2>Carrito de Compras</h2>
+<ul>
+    {{range .CartItems}}
+    <li>{{.Name}} - ${{.Price}} x {{.Quantity}}</li>
+    {{end}}
+</ul>
+<p>Total: ${{.CartTotal}}</p>
+{{end}}

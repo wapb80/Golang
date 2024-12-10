@@ -1,0 +1,4 @@
+github.com/go-echarts/go-echarts/v2 v2.4.5 h1:gwDqxdi5x329sg+g2ws2OklreJ1K34FCimraInurzwk=
+github.com/go-echarts/go-echarts/v2 v2.4.5/go.mod h1:56YlvzhW/a+du15f3S2qUGNDfKnFOeJSThBIrVFHDtI=
+golang.org/x/net v0.31.0 h1:68CPQngjLL0r2AlUKiSxtQFKvzRVbnzLwMUn5SzcLHo=
+golang.org/x/net v0.31.0/go.mod h1:P4fl1q7dY2hnZFxEk4pPSkDHF+QqjitcnDjUQyMM+pM=

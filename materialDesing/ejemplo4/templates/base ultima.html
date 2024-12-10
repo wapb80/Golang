@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+
+  <!-- Bootstrap CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+
+
+
+
+  label {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      display: block;
+      color: #555;
+  }
+
+  select {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+      background-color: #f9f9f9;
+      transition: all 0.3s ease;
+  }
+
+  select:focus {
+      border-color: #5b9bd5;
+      background-color: #eaf5ff;
+      outline: none;
+  }
+
+
+
+
+
+/********************************************************/
+
+    /* General Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Body Styling */
+    body {
+      font-family: 'Lato', sans-serif;
+      background-color: #f8f9fa; /* Color de fondo moderno */
+      color: #34495e; /* Texto en gris oscuro */
+    }
+
+    /* Header Styling */
+    header {
+      background-color: #2c3e50; /* Azul oscuro */
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 20px;
+    }
+
+    .nav-icons {
+      display: flex;
+      list-style-type: none;
+    }
+
+    .nav-icons li {
+      margin-left: 20px;
+    }
+
+    .nav-icons a {
+      color: #fff;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .nav-icons a:hover {
+      color: #27ae60; /* Verde vibrante al pasar el ratón */
+    }
+
+    /* Main Container */
+    main {
+      display: flex;
+      height: calc(100vh - auto); /* Resta la altura del header */
+      overflow-y: hidden; /* Oculta el scroll vertical en el main */
+    }
+
+    /* Sidebar Styling */
+    #sidebar {
+      width: 250px; /* Ancho del sidebar */
+      background-color: #ffffff; /* Blanco puro */
+      height: 100%;
+      overflow-y: auto; /* Permite scroll si hay mucho contenido */
+      box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.1);
+      position: static;
+      flex-shrink: 0; /* Mantiene el ancho fijo */
+      padding: 20px; /* Espaciado interno */
+      transition: width 0.3s ease; /* Transición suave al colapsar */
+    }
+
+    #sidebar.collapsed {
+      width: 60px; /* Ancho del sidebar colapsado */
+    }
+
+    #sidebar ul {
+      list-style: none;
+      padding-left: 0; /* Sin padding izquierdo */
+    }
+
+    #sidebar li {
+      padding: 15px; /* Mayor espaciado interno */
+      background-color: #f5f5f5; /* Color de fondo claro para los items */
+      margin-bottom: 10px; /* Espacio entre elementos */
+      border-radius: 8px; /* Bordes redondeados más suaves */
+      cursor: pointer;
+      text-align: center;
+      transition: background-color 0.3s ease, transform 0.2s ease; /* Transición suave */
+    }
+
+    #sidebar li:hover {
+      background-color: #27ae60; /* Color de fondo al pasar el ratón */
+      color: #fff; /* Color del texto al pasar el ratón */
+      transform: translateY(-2px); /* Efecto de elevación al pasar el ratón */
+    }
+
+    .empty-message {
+        text-align: center; 
+        padding: 20px; 
+        color: #666; 
+        font-size: 16px; 
+        font-style: italic; 
+     }
+
+    /* Main Content */
+    #main-content {
+      flex-grow: 1; /* Ocupa el espacio restante */
+      overflow-y: auto;
+      background-color: #ffffff; /* Fondo blanco para el contenido principal */
+      padding: 20px;
+    }
+
+    /* Custom Select Bar */
+    .custom-select-bar {
+        display : grid; 
+        grid-template-columns : repeat(5 ,1fr); 
+        gap :10px; 
+        background-color :#27ae60; /* Verde vibrante para la barra de selects */ 
+        padding :10px; 
+        position :sticky; 
+        top :0; 
+        z-index :900; 
+        box-shadow :0 2px 10px rgba(0,0,0,0.1); 
+     }
+    
+     .custom-select-bar select { 
+        padding :10px; 
+        border :1px solid #27ae60; 
+        border-radius :4px; 
+        background-color :#fff; 
+        color :#333; 
+        font-size :14px; 
+        width :100%; 
+        box-shadow :0 2px 5px rgba(0,0,0,0.1); 
+     }
+    
+     .custom-select-bar select:hover { 
+        border-color :#004d40; 
+     }
+    
+     /* Content Area */
+     .content { 
+         margin-top :20px;  
+     }
+    
+     /* Responsive Design */
+     @media (max-width :1200px) { 
+         .custom-select-bar { 
+             grid-template-columns : repeat(4 ,1fr);  
+         } 
+     }
+    
+     @media (max-width :992px) { 
+         .custom-select-bar { 
+             grid-template-columns : repeat(3 ,1fr);  
+         } 
+     }
+    
+     @media (max-width :768px) { 
+         .custom-select-bar { 
+             grid-template-columns : repeat(2 ,1fr);  
+         } 
+     }
+    
+     @media (max-width :576px) { 
+         .custom-select-bar { 
+             grid-template-columns : repeat(1 ,1fr);  
+         } 
+     }
+    
+
+     .custom-select {
+            position: relative;
+            cursor: pointer;
+            border: 1px solid #ced4da;
+            padding: 4px 12px;
+            border-radius: 4px;
+            background-color: #fff;
+            width: 100%;
+        }
+
+        .options-container {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: #fff;
+            z-index: 10;
+            padding: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .custom-select.open .options-container {
+            display: block;
+            transform: scaleY(1);
+        }
+
+        .form-check {
+            margin-bottom: 0;
+        }
+
+        .form-check-input {
+            margin-right: 1px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+        .col-md-4 {
+            margin-bottom: 10px; /* Ajusta el valor según el espacio deseado */
+        }
+</style>
+</head>
+<body>
+<header>
+   <div class="nav-wrapper teal">
+       <!-- Botón para colapsar el sidebar -->
+       <button id="toggleSidebar" class="btn btn-light">☰</button>
+       <!-- Menú de navegación superior -->
+       <ul id="nav-mobile" class="right nav-icons hide-on-med-and-down">
+           <li><a href="/reportes" hx-get="/menu/reportes" hx-target="#sidebar"><i class="material-icons">home</i>Inicio</a></li>
+           <li><a href="/reportes" hx-get="/menu/reportes" hx-target="#sidebar"><i class="material-icons">insert_chart</i>Reportes</a></li>
+           <li><a href="/reportes" hx-get="/menu/reportes" hx-target="#sidebar"><i class="material-icons">compare_arrows</i>Comparativas</a></li>
+           <li><a href="/reportes" hx-get="/menu/reportes" hx-target="#sidebar"><i class="material-icons">map</i>Georreferenciación</a></li>
+           <li><a href="/reportes" hx-get="/menu/reportes" hx-target="#sidebar"><i class="material-icons">account_circle</i>Perfil</a></li>
+       </ul>
+   </div>
+</header>
+<main>
+    <div id="sidebar">
+       <div class="empty-message" id="empty-message">Seleccione una opción del menú principal</div>
+       <!-- Opciones del sidebar -->
+    </div>
+   <div id="main-content">
+    <div class="container my-4">
+  
+      <!-- Botón para mostrar los filtros -->
+      <button id="showFiltersBtn" class="btn btn-primary mb-3">Mostrar Filtros</button>
+  
+      <div class="card" id="filtersCard" class="hidden">
+          <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">Filtros</h5>
+              <button class="btn btn-outline-secondary btn-sm" id="closeFiltersBtn">Cerrar</button>
+          </div>
+          <div class="card-body">
+            <form id="filtersForm">
+              <div class="row g-3">
+                  <!-- Filtro : Sexo -->
+                  <div class="col-md-4">
+                    <label class="form-label">Sexo:</label>
+                      <div class="position-relative custom-select" id="Sexo">
+                          <span id="selectedTextSexo">Seleccionar Sexo</span>
+                          <div class="options-container">
+                              <!-- <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="todo" id="sexoTodo">
+                                  <label class="form-check-label" for="sexoTodo">Todo</label>
+                              </div> -->
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Hombre" id="sexoH">
+                                  <label class="form-check-label" for="sexoH">Hombre</label>
+                              </div>
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Mujer" id="sexoM">
+                                  <label class="form-check-label" for="sexoM">Mujer</label>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- Filtro : Pueblos Originarios -->
+                  <div class="col-md-4">
+                    <label class="form-label">Pueblos Originarios:</label>
+                      <div class="position-relative custom-select" id="Pueblos Originarios">
+                          <span id="selectedTextpueblosOriginarios">Seleccionar Pueblos Originarios</span>
+                          <div class="options-container">
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Pertenece" id="puebloPertenece">
+                                  <label class="form-check-label" for="puebloPertenece">Pertenece</label>
+                              </div>
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="No Pertenece" id="puebloNoPertenece">
+                                  <label class="form-check-label" for="puebloNoPertenece">No Pertenece</label>
+                              </div>
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="No Sabe" id="noSabe">
+                                  <label class="form-check-label" for="noSabe">No Sabe</label>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- Filtro : Nacionalidad -->
+                  <div class="col-md-4">
+                    <label class="form-label">Nacionalidad:</label>
+                      <div class="position-relative custom-select" id="Nacionalidad">
+                          <span id="selectedTextNacionalidad">Seleccionar Nacionalidad</span>
+                          <div class="options-container">
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Chilena" id="chilena">
+                                  <label class="form-check-label" for="chilena">Chilena</label>
+                              </div>
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Extranjera" id="extranjera">
+                                  <label class="form-check-label" for="extranjera">Extranjera</label>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>                
+              <div class="row g-3">
+                  <!-- Filtro : Zona GEografica -->
+                  <div class="col-md-4">
+                    <label class="form-label">Zona Geográfica:</label>
+                      <div class="position-relative custom-select" id="Zona Geografica">
+                          <span id="selectedTextZonaGeografica">Seleccionar Zona Geográfica</span>
+                          <div class="options-container">
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Urbana" id="urbana">
+                                  <label class="form-check-label" for="urbana">Urbana</label>
+                              </div>
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Rural" id="rural">
+                                  <label class="form-check-label" for="rural">Casado</label>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  
+
+                  
+                  <!-- Filtro : Dependencia -->
+                  <div class="col-md-4">
+                    <label class="form-label">Dependencia:</label>
+                      <div class="position-relative custom-select" id="Dependencia">
+                          <span id="selectedTextDependencia">Seleccionar Dependencia</span>
+                          <div class="options-container">
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="DAEM" id="daem">
+                                  <label class="form-check-label" for="daem">Municipalidad DAEM</label>
+                              </div>
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Corporacion Municipal" id="cmunicipal">
+                                  <label class="form-check-label" for="cmunicipal">Corporación Municipal</label>
+                              </div>
+                              <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="SLEP" id="slep">
+                                <label class="form-check-label" for="slep">Servicio Local de Educación Pública (SLEP)</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="Administración Delejada" id="addelejada">
+                              <label class="form-check-label" for="addelejada">Administración Delejada</label>
+                          </div>                                                          
+                          <div class="form-check">
+                            <input class="form-check-input category-checkbox" type="checkbox" value="Particular Subencionado" id="psubencionado">
+                            <label class="form-check-label" for="psubencionado">Particular Subencionado</label>
+                        </div>                              
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- Filtro : IVM -->
+                      <div class="col-md-4">
+                        <label class="form-label">I.V.M.:</label>
+                          <div class="position-relative custom-select" id="Ivm">
+                              <span id="selectedTextIvm">Seleccionar IVM</span>
+                              <div class="options-container">
+                                  <div class="form-check">
+                                      <input class="form-check-input category-checkbox" type="checkbox" value="Muy Alto" id="ivmma">
+                                      <label class="form-check-label" for="ivmma">Muy Alto</label>
+                                  </div>
+                                  <div class="form-check">
+                                      <input class="form-check-input category-checkbox" type="checkbox" value="Alto" id="ivma">
+                                      <label class="form-check-label" for="ivma">Alto</label>
+                                  </div>
+                                  <div class="form-check">
+                                      <input class="form-check-input category-checkbox" type="checkbox" value="Medio" id="ivmm">
+                                      <label class="form-check-label" for="ivmm">Medio</label>
+                                  </div>
+                                  <div class="form-check">
+                                    <input class="form-check-input category-checkbox" type="checkbox" value="Bajo" id="ivmb">
+                                    <label class="form-check-label" for="ivmb">Bajo</label>
+                                </div>                                  
+                              </div>
+                          </div>
+                      </div>
+              </div>
+
+              
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <!-- Filtro :  Estado Nutricional -->
+                  <label class="form-label">Estado Nutricional:</label>
+                  <div class="position-relative custom-select" id="Estado Nutricional">
+                      <span id="selectedTextEstadoNutricional">Seleccionar Estado Nutricional</span>
+                      <div class="options-container">
+                          <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="Obesidad Severa" id="os">
+                              <label class="form-check-label" for="os">Obesidad Severa</label>
+                          </div>
+                          <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="Obesidad" id="o">
+                              <label class="form-check-label" for="o">Obesidad</label>
+                          </div>
+                          <div class="form-check">
+                            <input class="form-check-input category-checkbox" type="checkbox" value="Sobrepeso" id="sp">
+                            <label class="form-check-label" for="sp">Sobrepeso</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input category-checkbox" type="checkbox" value="Normal" id="no">
+                          <label class="form-check-label" for="no">Normal</label>
+                      </div>  
+                      <div class="form-check">
+                        <input class="form-check-input category-checkbox" type="checkbox" value="Riesgo Desnutricion" id="rd">
+                        <label class="form-check-label" for="rd">Riesgo Desnutrición</label>
+                    </div>   
+                    <div class="form-check">
+                      <input class="form-check-input category-checkbox" type="checkbox" value="Desnutricion" id="d">
+                      <label class="form-check-label" for="d">Desnutrición</label>
+                  </div>                                                                                                   
+                      </div>
+                  </div>
+              </div>
+              
+
+              
+              <!-- Filtro : Retrazo en talla -->
+              <div class="col-md-4">
+                <label class="form-label">Talla:</label>
+                  <div class="position-relative custom-select" id="Talla">
+                      <span id="selectedTextTalla">Seleccionar Talla</span>
+                      <div class="options-container">
+                          <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="Si" id="tallasi">
+                              <label class="form-check-label" for="tallasi">Si</label>
+                          </div>
+                          <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="No" id="tallano">
+                              <label class="form-check-label" for="tallano">No</label>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+                  <!-- Filtro 6: Discapacidad -->
+                  <div class="col-md-4">
+                    <label class="form-label">Discapacidad:</label>
+                      <div class="position-relative custom-select" id="Discapacidad">
+                          <span id="selectedTextDiscapacidad">Seleccionar Discapacidad</span>
+                          <div class="options-container">
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Sin Discapacidad" id="sd">
+                                  <label class="form-check-label" for="sd">Sin Discapacidad</label>
+                              </div>
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Leve" id="ld">
+                                  <label class="form-check-label" for="ld">Leve</label>
+                              </div>
+                              <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Moderada" id="md">
+                                  <label class="form-check-label" for="md">Moderada</label>
+                              </div>
+                              <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Severa" id="ds">
+                                <label class="form-check-label" for="ds">Severa</label>
+                            </div>                                  
+                          </div>
+                      </div>
+                  </div>
+            </div>
+
+
+            <div class="row g-3">
+            <!-- Filtro : Grupos Vulnerables -->
+                <div class="col-md-4">
+                  <label class="form-label">Grupos Vulnerables:</label>
+                    <div class="position-relative custom-select"  id="Grupos Vulnerables">
+                        <span id="selectedTextGruposVulnerables">Seleccionar Grupos Vulnerables</span>
+                        <div class="options-container">
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Sin Figura Paterna" id="gsfp">
+                                <label class="form-check-label" for="gsfp">Sin Figura Paterna</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Padres Extranjeros" id="gpe">
+                                <label class="form-check-label" for="gpe">Padres Extranjeros</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Dificultades de Salud" id="gds">
+                                <label class="form-check-label" for="gds">Dificultades de Salud</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="Madre Jefa de Hogar" id="gmjh">
+                              <label class="form-check-label" for="gmjh">Madre Jefa de Hogar</label>
+                          </div>                                  
+                        </div>
+                    </div>
+                </div>
+          </div>
+
+              <div class="text-end mt-3" id="botonFiltros">
+                 
+              </div>
+          </form>
+          </div>
+      </div>
+  
+      <!-- Resultados -->
+      <div class="mt-4">
+          <h5>Resultados:</h5>
+          <div id="results" class="alert alert-secondary">No hay resultados. Aplica algún filtro.</div>
+      </div>
+  </div>
+
+     <div class="content">
+       <p>Contenido principal aquí...</p>
+     </div>
+   </div>
+</main>
+
+<!-- Bootstrap JS CDN (opcional) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Material Icons CDN -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<!-- HTMX CDN -->
+<script src="https://unpkg.com/htmx.org"></script>
+
+<script>
+// Script para manejar la colapsabilidad del sidebar
+document.getElementById('toggleSidebar').addEventListener('click', function() {
+   const sidebar = document.getElementById('sidebar');
+   sidebar.classList.toggle('collapsed');
+});
+</script>
+
+
+<script>
+  // Variables
+  const filtersCard = document.getElementById('filtersCard');
+  const closeFiltersBtn = document.getElementById('closeFiltersBtn');
+  const showFiltersBtn = document.getElementById('showFiltersBtn');
+  
+  // Filtros manualmente definidos
+  const customSelects = [
+      { id: 'Sexo', selectedText: 'selectedTextSexo' },
+      { id: 'Pueblos Originarios', selectedText: 'selectedTextpueblosOriginarios' },
+      { id: 'Nacionalidad', selectedText: 'selectedTextNacionalidad' },      
+      { id: 'Zona Geografica', selectedText: 'selectedTextZonaGeografica' },
+      { id: 'Dependencia', selectedText: 'selectedTextDependencia' },
+      { id: 'Ivm', selectedText: 'selectedTextIvm' },
+      { id: 'Estado Nutricional', selectedText: 'selectedTextEstadoNutricional' },
+      { id: 'Talla', selectedText: 'selectedTextTalla' },
+      { id: 'Discapacidad', selectedText: 'selectedTextDiscapacidad' },
+      { id: 'Grupos Vulnerables', selectedText: 'selectedTextGruposVulnerables' }
+
+  ];
+  
+  // Mostrar/Ocultar opciones al hacer clic en cada select
+  customSelects.forEach((customSelect) => {
+      const selectElement = document.getElementById(customSelect.id);
+      const optionsContainer = selectElement.querySelector('.options-container');
+      const selectedTextElement = document.getElementById(customSelect.selectedText);
+      const defaultText = selectedTextElement.textContent; // Guardamos el texto predeterminado
+  
+      selectElement.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectElement.classList.toggle('open');
+      });
+  
+      // Escuchar eventos de clic en los checkboxes
+      optionsContainer.addEventListener('change', () => {
+          const selectedOptions = Array.from(
+              optionsContainer.querySelectorAll('.category-checkbox:checked')
+          ).map(option => option.value);
+  
+          if (selectedOptions.length > 0) {
+              selectedTextElement.textContent = selectedOptions.join(', ');
+          } else {
+              // Restablecer el texto predeterminado si no hay seleccionados
+              selectedTextElement.textContent = defaultText;
+          }
+      });
+  });
+  
+  
+  // Cerrar las opciones si se hace clic fuera
+  document.addEventListener('click', (e) => {
+      customSelects.forEach(customSelect => {
+          const selectElement = document.getElementById(customSelect.id);
+          if (!selectElement.contains(e.target)) {
+              selectElement.classList.remove('open');
+          }
+      });
+  });
+  
+  // Manejador del botón "Cerrar"
+  closeFiltersBtn.addEventListener('click', () => {
+      filtersCard.classList.add('d-none');
+  });
+  
+  // Manejador del botón "Mostrar Filtros"
+  showFiltersBtn.addEventListener('click', () => {
+      filtersCard.classList.remove('d-none');
+  });
+  
+
+  // Manejador de envío de formulario
+  document.getElementById('filtersForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const filters = {};
+  
+
+
+// Obtener texto de las opciones seleccionadas de otros selects en la página
+const additionalSelects = document.querySelectorAll('select'); // Cambia el selector si tienes un conjunto específico
+additionalSelects.forEach((select) => {
+    const selectedOption = select.options[select.selectedIndex];
+    const selectedValue = select.value; // Obtiene la opción seleccionada
+    if ((selectedValue) && selectedValue!="no") { // Solo incluir si existe una opción seleccionada
+        filters[select.id] = selectedOption.textContent.trim(); // Agregar el texto de la opción
+    }
+});
+
+  // Obtener valores de los customSelects
+customSelects.forEach((customSelect) => {
+    const selectElement = document.getElementById(customSelect.id);
+    const optionsContainer = selectElement.querySelector('.options-container');
+    
+    // Verificar si hay checkboxes seleccionados
+    const selectedOptions = Array.from(
+        optionsContainer.querySelectorAll('.category-checkbox:checked')
+    ).map(option => option.value);
+    
+    //Solo agregamos el filtro si hay opciones seleccionadas
+    if (selectedOptions.length > 0) {
+        filters[customSelect.id] = selectedOptions.join(', ');
+    }
+    // if (selectedOptions.length > 0) {
+    //     const selectName = selectElement.name || customSelect.id; // Usa name si existe, si no, usa id
+    //     filters[selectName] = selectedOptions.join(', '); // Agrega al filtro usando el name
+    // }
+});
+
+
+
+// Actualizar el contenido de results
+const resultsDiv = document.getElementById('results');
+
+if (Object.keys(filters).length > 0) {
+    // Convertir los filtros a texto legible
+    const readableFilters = Object.entries(filters)
+        .map(([key, value]) => `${key}: ${value}`) // Formato clave: valor
+        .join('<br>'); // Separar cada filtro con una nueva línea
+
+    resultsDiv.innerHTML = readableFilters; // Mostrar el texto formateado
+} else {
+    resultsDiv.textContent = 'No hay resultados.'; // Mensaje si no hay filtros
+}
+
+
+    
+ });
+  
+
+  
+  </script>
+</body>
+</html> 

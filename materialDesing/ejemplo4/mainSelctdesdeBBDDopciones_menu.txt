@@ -1,0 +1,92 @@
+package main
+
+import (
+	"database/sql"
+	"html/template"
+	"log"
+	"net/http"
+
+	_ "github.com/lib/pq" // Driver de PostgreSQL
+)
+
+var (
+	tmpl = template.Must(template.ParseGlob("templates/*.html"))
+	db   *sql.DB
+)
+
+// Configurar la conexión a la base de datos
+func initDB() {
+	var err error
+	connStr := "postgres://postgres:Sead_2023%23@192.168.8.2:5432/encvulne"
+	// connStr := "postgres://usuario:contraseña@localhost:5432/tu_base_de_datos?sslmode=disable"
+
+	db, err = sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatalf("Error al conectar a la base de datos: %v", err)
+	}
+
+	// Verificar que la conexión esté funcionando
+	if err = db.Ping(); err != nil {
+		log.Fatalf("No se puede conectar a la base de datos: %v", err)
+	}
+	log.Println("Conexión a la base de datos exitosa")
+}
+
+func renderTemplate(w http.ResponseWriter, tmplName string, data interface{}) {
+	err := tmpl.ExecuteTemplate(w, tmplName, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func menuReportesHandler(w http.ResponseWriter, r *http.Request) {
+	// Consultar datos de la base de datos
+	rows, err := db.Query("SELECT categoria, opcion FROM opciones_menu ORDER BY categoria, opcion")
+	if err != nil {
+		http.Error(w, "Error al consultar la base de datos", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	// Estructura para agrupar opciones por categoría
+	menuData := map[string][]string{}
+
+	for rows.Next() {
+		var categoria, opcion string
+		if err := rows.Scan(&categoria, &opcion); err != nil {
+			http.Error(w, "Error al procesar datos", http.StatusInternalServerError)
+			return
+		}
+		menuData[categoria] = append(menuData[categoria], opcion)
+	}
+
+	// Crear datos en el formato esperado por la plantilla
+	templateData := []map[string]interface{}{}
+	for categoria, opciones := range menuData {
+		templateData = append(templateData, map[string]interface{}{
+			"Label":   categoria,
+			"Options": opciones,
+		})
+	}
+
+	renderTemplate(w, "menu_reportes.html", map[string]interface{}{
+		"Options": templateData,
+	})
+}
+
+func main() {
+	// Inicializar la base de datos
+	initDB()
+	defer db.Close()
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		renderTemplate(w, "base.html", map[string]interface{}{
+			"Title": "Bienvenida",
+		})
+	})
+
+	http.HandleFunc("/menu/reportes", menuReportesHandler)
+
+	log.Println("Servidor iniciado en http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}

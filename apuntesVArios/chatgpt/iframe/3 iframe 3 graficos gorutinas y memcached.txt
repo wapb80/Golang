@@ -1,0 +1,176 @@
+Instalar la biblioteca de Memcached para Go:
+Para interactuar con Memcached desde Go, utilizaremos el paquete github.com/bradfitz/gomemcache/memcache.
+
+Puedes instalarlo ejecutando:
+
+bash
+Copiar código
+go get github.com/bradfitz/gomemcache/memcache
+2. Código Backend con Memcached
+Ahora, vamos a modificar el código para integrar Memcached y almacenar los gráficos generados:
+
+go
+Copiar código
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/opts"
+)
+
+var mc *memcache.Client
+
+func init() {
+	// Conectar a Memcached
+	mc = memcache.New("127.0.0.1:11211") // Cambia la dirección si es necesario
+}
+
+// Función para generar datos de ejemplo
+func generateData(base int) []opts.BarData {
+	data := make([]opts.BarData, 0)
+	for i := 1; i <= 5; i++ {
+		data = append(data, opts.BarData{Value: base * i})
+	}
+	return data
+}
+
+// Crear gráfico de barras
+func createBarChart(title string, base int) *charts.Bar {
+	bar := charts.NewBar()
+	bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: title}))
+	bar.SetXAxis([]string{"A", "B", "C", "D", "E"}).
+		AddSeries("Series A", generateData(base))
+	return bar
+}
+
+// Crear gráfico de líneas
+func createLineChart(title string, base int) *charts.Line {
+	line := charts.NewLine()
+	line.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: title}))
+	line.SetXAxis([]string{"A", "B", "C", "D", "E"}).
+		AddSeries("Series A", generateData(base))
+	return line
+}
+
+// Crear gráfico de pastel
+func createPieChart(title string, base int) *charts.Pie {
+	pie := charts.NewPie()
+	pie.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: title}))
+
+	data := make([]opts.PieData, 0)
+	for i, v := range generateData(base) {
+		data = append(data, opts.PieData{Name: fmt.Sprintf("Elemento %d", i+1), Value: v.Value})
+	}
+
+	pie.AddSeries("Categoría A", data)
+	return pie
+}
+
+// Función para generar gráficos y almacenarlos en Memcached
+func generateChartCache(key string, generateChart func() *charts.Chart) (string, error) {
+	// Verificar si el gráfico ya está en la caché
+	item, err := mc.Get(key)
+	if err == nil {
+		// Si el gráfico está en caché, devolver el gráfico en HTML
+		return string(item.Value), nil
+	}
+
+	// Si no está en la caché, generar el gráfico
+	var sb strings.Builder
+	chart := generateChart()
+	chart.Render(&sb)
+
+	// Almacenar el gráfico en la caché durante 1 hora (3600 segundos)
+	err = mc.Set(&memcache.Item{
+		Key:        key,
+		Value:      []byte(sb.String()),
+		Expiration: 3600,
+	})
+	if err != nil {
+		return "", fmt.Errorf("error al guardar en la caché: %v", err)
+	}
+
+	// Devolver el gráfico generado
+	return sb.String(), nil
+}
+
+// Manejar la solicitud de gráficos
+func chartHandler(w http.ResponseWriter, r *http.Request) {
+	chartType := r.URL.Query().Get("type") // Tipo de gráfico (bar, line, pie)
+	params := r.URL.Query()["params"]     // Ejemplo: ?params=edad,30&params=genero,M
+
+	// Usamos un waitgroup para esperar a que los gráficos se generen
+	var wg sync.WaitGroup
+	var sb strings.Builder
+	errCh := make(chan error, 1)
+
+	// Generación concurrente de los gráficos
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		// Crear la clave de caché basada en los parámetros de la solicitud
+		key := fmt.Sprintf("%s-%s", chartType, strings.Join(params, "-"))
+
+		var chartHtml string
+		var err error
+
+		// Generar y obtener el gráfico desde la caché o crearlo si no existe
+		switch chartType {
+		case "bar":
+			chartHtml, err = generateChartCache(key, func() *charts.Chart {
+				return createBarChart("Gráfico de Barras", len(params)*10)
+			})
+		case "line":
+			chartHtml, err = generateChartCache(key, func() *charts.Chart {
+				return createLineChart("Gráfico de Líneas", len(params)*15)
+			})
+		case "pie":
+			chartHtml, err = generateChartCache(key, func() *charts.Chart {
+				return createPieChart("Gráfico de Pie", len(params)*20)
+			})
+		default:
+			errCh <- fmt.Errorf("tipo de gráfico no válido")
+			return
+		}
+
+		if err != nil {
+			errCh <- err
+			return
+		}
+
+		// Almacenar el gráfico generado en la respuesta
+		sb.WriteString(chartHtml)
+	}()
+
+	// Esperar a que todos los gráficos se generen
+	wg.Wait()
+	close(errCh)
+
+	// Manejar errores
+	if err := <-errCh; err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Enviar el gráfico al cliente
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(sb.String()))
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "templates/index.html")
+}
+
+func main() {
+	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/chart", chartHandler)
+	http.ListenAndServe(":8080", nil)
+}

@@ -1,0 +1,381 @@
+Para realizar múltiples consultas a más de un archivo Parquet utilizando DuckDB y Memcached, y ejecutar estas consultas de manera concurrente en Go, puedes seguir el siguiente ejemplo. Este enfoque utiliza Memcached para almacenar los resultados en caché, lo que puede ayudar a evitar consultas repetidas a los mismos datos.
+Requisitos Previos
+Instalar DuckDB: Asegúrate de tener DuckDB disponible en tu entorno.
+Instalar Memcached: Asegúrate de que un servidor Memcached esté en ejecución.
+Instalar las bibliotecas necesarias en Go:
+pq para conectarse a PostgreSQL (si es necesario).
+duckdb para interactuar con DuckDB.
+gomemcache para interactuar con Memcached.
+Puedes instalar las bibliotecas necesarias usando:
+bash
+go get github.com/duckdb/duckdb-go
+go get github.com/bradfitz/gomemcache/memcache
+
+Ejemplo de Código en Go
+A continuación se presenta un ejemplo que ilustra cómo conectarse a DuckDB, realizar múltiples consultas a archivos Parquet concurrentemente y almacenar los resultados en Memcached.
+go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "log"
+    "sync"
+
+    "github.com/bradfitz/gomemcache/memcache"
+    "github.com/duckdb/duckdb-go"
+)
+
+func queryParquetWithCache(query string, parquetFile string, mc *memcache.Client, wg *sync.WaitGroup) {
+    defer wg.Done()
+
+    // Verificar si hay datos en caché
+    cachedItem, err := mc.Get(query)
+    if err == nil {
+        // Si hay datos en caché, deserializarlos y usarlos
+        var result []map[string]interface{}
+        json.Unmarshal(cachedItem.Value, &result)
+        fmt.Printf("Usando datos en caché para la consulta: %s\nResultados: %v\n", query, result)
+        return
+    }
+
+    // Conectar a DuckDB
+    duckConn, err := duckdb.Connect()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer duckConn.Close()
+
+    // Ejecutar la consulta en DuckDB sobre el archivo Parquet
+    rows, err := duckConn.Query(fmt.Sprintf("SELECT * FROM read_parquet('%s') WHERE %s", parquetFile, query))
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer rows.Close()
+
+    // Procesar resultados
+    var results []map[string]interface{}
+    columns, _ := rows.Columns()
+    
+    for rows.Next() {
+        values := make([]interface{}, len(columns))
+        for i := range values {
+            values[i] = new(interface{})
+        }
+        
+        if err := rows.Scan(values...); err != nil {
+            log.Fatal(err)
+        }
+
+        row := make(map[string]interface{})
+        for i, col := range columns {
+            row[col] = *(values[i].(*interface{}))
+        }
+        results = append(results, row)
+    }
+
+    // Almacenar resultados en Memcached
+    resultJSON, _ := json.Marshal(results)
+    mc.Set(&memcache.Item{Key: query, Value: resultJSON})
+
+    fmt.Printf("Resultados de la consulta guardados en caché: %s\nResultados: %v\n", query, results)
+}
+
+func main() {
+    // Conectar a Memcached
+    mc := memcache.New("localhost:11211")
+
+    var wg sync.WaitGroup
+
+    // Definir los archivos Parquet y las consultas
+    queries := []struct {
+        query      string
+        parquetFile string
+    }{
+        {"columna1 = 'valor1'", "ruta/al/archivo1.parquet"},
+        {"columna2 > 100", "ruta/al/archivo2.parquet"},
+        {"columna3 IS NOT NULL", "ruta/al/archivo3.parquet"},
+    }
+
+    // Ejecutar las consultas concurrentemente
+    for _, q := range queries {
+        wg.Add(1)
+        go queryParquetWithCache(q.query, q.parquetFile, mc, &wg)
+    }
+
+    // Esperar a que todas las goroutines terminen
+    wg.Wait()
+}
+
+Explicación del Código
+Conexión a Memcached: Se establece una conexión con el servidor Memcached utilizando gomemcache.
+Función queryParquetWithCache:
+Intenta obtener los resultados de la consulta desde Memcached utilizando la consulta como clave.
+Si se encuentran resultados en caché, se deserializan y se imprimen.
+Si no hay resultados en caché, se conecta a DuckDB y ejecuta la consulta sobre el archivo Parquet especificado.
+Los resultados se procesan y se almacenan en un mapa para facilitar su manejo.
+Finalmente, los resultados se serializan y se almacenan en Memcached para futuras consultas.
+Ejecución Concurrente: Se utilizan goroutines y un sync.WaitGroup para ejecutar las consultas concurrentemente.
+
+
+
+
+
+
+
+
+##############################################################################################################################
+##############################################################################################################################
+##############################################################################################################################
+
+		Respuesta
+Para integrar la biblioteca go-echarts en el ejemplo anterior y renderizar gráficos en una aplicación web utilizando Go, DuckDB y Memcached, puedes seguir estos pasos. Este ejemplo mostrará cómo realizar consultas a archivos Parquet, almacenar resultados en caché y generar gráficos interactivos utilizando go-echarts.
+Estructura del Proyecto
+Tu proyecto podría tener la siguiente estructura:
+text
+/mi-app
+|-- main.go
+|-- templates
+|   |-- index.html
+|-- data
+|   |-- archivo1.parquet
+|   |-- archivo2.parquet
+
+Plantilla HTML (templates/index.html)
+Aquí tienes el contenido de la plantilla HTML que se utilizará para mostrar los gráficos y permitir la interacción:
+xml
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráficos con DuckDB y go-echarts</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+</head>
+<body>
+
+<h1>Gráficos Dinámicos</h1>
+<button hx-get="/chart" hx-target="#chart" hx-swap="innerHTML">Cargar Gráfico</button>
+
+<div id="chart">
+  <!-- El gráfico generado aparecerá aquí -->
+</div>
+
+</body>
+</html>
+
+Código de Ejemplo en Go (main.go)
+A continuación, se presenta el código completo que utiliza go-echarts para generar gráficos:
+go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "html/template"
+    "log"
+    "net/http"
+    "sync"
+
+    "github.com/bradfitz/gomemcache/memcache"
+    "github.com/duckdb/duckdb-go"
+    "github.com/go-echarts/go-echarts/v2/charts"
+    "github.com/go-echarts/go-echarts/v2/opts"
+)
+
+var mc *memcache.Client
+
+// Función para consultar Parquet con caché
+func queryParquetWithCache(query string, parquetFile string, wg *sync.WaitGroup) []map[string]interface{} {
+    defer wg.Done()
+
+    // Verificar si hay datos en caché
+    cachedItem, err := mc.Get(query)
+    if err == nil {
+        // Si hay datos en caché, deserializarlos y usarlos
+        var result []map[string]interface{}
+        json.Unmarshal(cachedItem.Value, &result)
+        return result
+    }
+
+    // Conectar a DuckDB
+    duckConn, err := duckdb.Connect()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer duckConn.Close()
+
+    // Ejecutar la consulta en DuckDB sobre el archivo Parquet
+    rows, err := duckConn.Query(fmt.Sprintf("SELECT * FROM read_parquet('%s') WHERE %s", parquetFile, query))
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer rows.Close()
+
+    // Procesar resultados
+    var results []map[string]interface{}
+    columns, _ := rows.Columns()
+
+    for rows.Next() {
+        values := make([]interface{}, len(columns))
+        for i := range values {
+            values[i] = new(interface{})
+        }
+
+        if err := rows.Scan(values...); err != nil {
+            log.Fatal(err)
+        }
+
+        row := make(map[string]interface{})
+        for i, col := range columns {
+            row[col] = *(values[i].(*interface{}))
+        }
+        results = append(results, row)
+    }
+
+    // Almacenar resultados en Memcached
+    resultJSON, _ := json.Marshal(results)
+    mc.Set(&memcache.Item{Key: query, Value: resultJSON})
+
+    return results
+}
+
+// Función para generar un gráfico a partir de los datos
+func generateChart(data []map[string]interface{}) *charts.Bar {
+    bar := charts.NewBar()
+    
+	// Configurar opciones del gráfico
+	bar.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title: "Gráfico de Datos",
+			Subtitle: "Generado a partir de archivos Parquet",
+		}),
+	)
+
+	// Preparar datos para el gráfico (ajusta según tus columnas)
+	xValues := []string{}
+	yValues := []opts.BarData{}
+
+	for _, item := range data {
+		if xVal, ok := item["columnaX"].(string); ok { // Cambia 'columnaX' por tu columna real
+			xValues = append(xValues, xVal)
+			if yVal, ok := item["columnaY"].(float64); ok { // Cambia 'columnaY' por tu columna real
+				yValues = append(yValues, opts.BarData{Value: yVal})
+			}
+		}
+	}
+
+	bar.SetXAxis(xValues).AddSeries("Datos", yValues)
+
+	return bar
+}
+
+// Manejador para la página principal
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("templates/index.html"))
+	
+	// Renderizar la plantilla index.html
+	if err := tmpl.Execute(w, nil); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Manejador para generar gráficos
+func chartHandler(w http.ResponseWriter, r *http.Request) {
+	var wg sync.WaitGroup
+
+	queries := []struct {
+		query       string
+		parquetFile string
+	}{
+		{"columna1 = 'valor1'", "data/archivo1.parquet"},
+		{"columna2 > 100", "data/archivo2.parquet"},
+	}
+
+	var allResults []map[string]interface{}
+
+	for _, q := range queries {
+		wg.Add(1)
+		go func(query struct {
+			query       string
+			parquetFile string
+		}) {
+			results := queryParquetWithCache(query.query, query.parquetFile, &wg)
+			allResults = append(allResults, results...)
+		}(q)
+	}
+
+	wg.Wait()
+
+	// Generar gráfico basado en los resultados obtenidos.
+	barChart := generateChart(allResults)
+
+	// Renderizar el gráfico como HTML utilizando go-echarts.
+	if err := barChart.Render(w); err != nil {
+		log.Println("Error al renderizar gráfico:", err)
+	}
+}
+
+func main() {
+	mc = memcache.New("localhost:11211")
+
+	http.HandleFunc("/", indexHandler)     // Ruta para la página principal
+	http.HandleFunc("/chart", chartHandler) // Ruta para generar gráficos
+
+	log.Println("Servidor escuchando en :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+Explicación del Código
+Conexión a Memcached: Se establece una conexión con el servidor Memcached al inicio del programa.
+Función queryParquetWithCache:
+Intenta obtener los resultados de la consulta desde Memcached.
+Si no hay resultados en caché, se conecta a DuckDB y ejecuta la consulta sobre el archivo Parquet especificado.
+Los resultados se procesan y se almacenan en un mapa para facilitar su manejo.
+Finalmente, los resultados se almacenan en Memcached para futuras consultas.
+Función generateChart:
+Crea un gráfico de barras utilizando go-echarts.
+Configura las opciones del gráfico y agrega los datos basados en las consultas realizadas.
+Manejador indexHandler:
+Carga y renderiza la plantilla index.html cuando se accede a la raíz (/).
+Manejador chartHandler:
+Ejecuta las consultas concurrentemente utilizando goroutines.
+Almacena los resultados en una lista.
+Genera un gráfico a partir de los resultados obtenidos.
+Renderiza el gráfico como una imagen PNG que se envía al cliente.
+Ejecución
+Para ejecutar este ejemplo:
+Asegúrate de que Memcached esté en funcionamiento.
+Asegúrate de que DuckDB esté disponible y que tengas los archivos Parquet necesarios.
+Ejecuta el código Go:
+bash
+go run main.go
+
+Abre tu navegador y ve a http://localhost:8080. Haz clic en el botón "Cargar Gráfico" para generar y mostrar los gráficos basados en los datos consultados.
+Conclusión
+Este ejemplo combina DuckDB, Memcached y go-echarts para crear una aplicación web que realiza consultas a archivos Parquet y genera gráficos dinámicamente. Puedes extender esta lógica según tus necesidades específicas y mejorarla con más características según lo requieras.
+
+
+##############################################################################################################################
+##############################################################################################################################
+##############################################################################################################################
+
+
+
+##############################################################################################################################
+##############################################################################################################################
+##############################################################################################################################
+
+
+
+##############################################################################################################################
+##############################################################################################################################
+##############################################################################################################################
+
+
+
+
+
+
+
+

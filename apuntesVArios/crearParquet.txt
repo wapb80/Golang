@@ -1,0 +1,1675 @@
+####################################################### Desde Python 
+######################################################## leer postgres desde duckdb y pasarlo a .parquet,,read_postgres utiliza internamente un flujo más eficiente, diseñado para leer directamente desde PostgreSQL y escribir en formato Parquet
+import duckdb
+
+# Conectar a DuckDB
+conn = duckdb.connect()
+
+# Ejecutar la consulta en PostgreSQL y exportar a Parquet
+conn.sql("""
+COPY (
+    SELECT * FROM read_postgres('postgres://usuario:contraseña@localhost:5432/tu_base_de_datos', 'SELECT * FROM tu_tabla')
+) TO './ruta/del/archivo.parquet' (FORMAT 'parquet');
+""")
+
+
+################################################################# Segunda opcion para leer postgres desde duckdb y pasarlo a.
+
+
+# Configura la conexión a PostgreSQL
+conn_string = "postgresql://tu_usuario:tu_contraseña@localhost:5432/tu_base_de_datos"
+
+# Conexión a DuckDB
+con = duckdb.connect()
+
+# Ejecuta la consulta directamente en PostgreSQL
+query = "SELECT * FROM tu_tabla"
+con.execute(f"INSTALL postgres; LOAD postgres;")
+con.execute(f"SET postgres_user='{conn_string}'")
+con.execute(f"""
+    COPY (SELECT * FROM postgres_scan('{query}')) 
+    TO 'output.parquet' (FORMAT PARQUET);
+""")
+
+print("Archivo Parquet generado con éxito.")
+con.close()
+
+
+
+
+###############################################################Con DuckDB CLI:
+###############################################################Exporta los datos desde PostgreSQL:
+
+bash
+Copiar código
+psql -h localhost -U tu_usuario -d tu_base_de_datos -c "COPY (SELECT * FROM tu_tabla) TO STDOUT WITH CSV" > output.csv
+Convierte el archivo CSV a Parquet con DuckDB:
+
+bash
+Copiar código
+duckdb -c "COPY (SELECT * FROM read_csv_auto('output.csv')) TO 'output.parquet' (FORMAT PARQUET)"
+
+
+
+
+
+###############################################################
+###############################################################  ejmplo desde Golang chatgpt
+
+
+Requisitos Previos
+Instalar DuckDB: Asegúrate de tener DuckDB disponible para su uso en tu entorno.
+Instalar PostgreSQL: Necesitarás acceso a una base de datos PostgreSQL.
+Instalar las bibliotecas necesarias en Go:
+pq para conectarse a PostgreSQL.
+duckdb para interactuar con DuckDB.
+Puedes instalar las bibliotecas necesarias usando:
+bash
+go get github.com/lib/pq
+go get github.com/duckdb/duckdb-go
+
+###############################################################
+
+package main
+
+import (
+    "database/sql"
+    "fmt"
+    "log"
+
+    _ "github.com/lib/pq"            // Conector para PostgreSQL
+    _ "github.com/marcboeker/go-duckdb" // Conector para DuckDB
+)
+
+func main() {
+    // Conexión a PostgreSQL
+    postgresConnStr := "host=localhost port=5432 user=tu_usuario password=tu_contraseña dbname=tu_base_de_datos sslmode=disable"
+    postgresDB, err := sql.Open("postgres", postgresConnStr)
+    if err != nil {
+        log.Fatalf("Error conectando a PostgreSQL: %v", err)
+    }
+    defer postgresDB.Close()
+
+    // Ejecutar consulta en PostgreSQL
+    query := "SELECT * FROM tu_tabla"
+    rows, err := postgresDB.Query(query)
+    if err != nil {
+        log.Fatalf("Error ejecutando consulta: %v", err)
+    }
+    defer rows.Close()
+
+    // Conexión a DuckDB (se puede usar un archivo para persistir la base temporal si lo deseas)
+    duckDB, err := sql.Open("duckdb", "")
+    if err != nil {
+        log.Fatalf("Error inicializando DuckDB: %v", err)
+    }
+    defer duckDB.Close()
+
+    // Crear tabla temporal en DuckDB y copiar datos
+    _, err = duckDB.Exec("CREATE TABLE temp_table AS SELECT * FROM read_postgres($1, $2, $3, $4, $5)", "localhost", 5432, "tu_usuario", "tu_contraseña", "tu_base_de_datos")
+    if err != nil {
+        log.Fatalf("Error creando tabla temporal en DuckDB: %v", err)
+    }
+
+    // Exportar la tabla como archivo Parquet
+    outputFile := "output.parquet"
+    _, err = duckDB.Exec(fmt.Sprintf("COPY temp_table TO '%s' (FORMAT 'parquet')", outputFile))
+    if err != nil {
+        log.Fatalf("Error exportando a Parquet: %v", err)
+    }
+
+    log.Printf("Archivo Parquet generado con éxito: %s", outputFile)
+}
+
+
+###############################################################
+###############################################################  ejmplo desde Golang perplexity
+
+package main
+
+import (
+    "database/sql"
+    "fmt"
+    "log"
+    "os"
+
+    "github.com/lib/pq"
+    "github.com/duckdb/duckdb-go"
+)
+
+func main() {
+    // Conexión a PostgreSQL
+    connStr := "user=usuario password=contraseña dbname=tu_base_de_datos host=localhost sslmode=disable"
+    pgDB, err := sql.Open("postgres", connStr)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer pgDB.Close()
+
+    // Ejecutar consulta en PostgreSQL
+    rows, err := pgDB.Query("SELECT * FROM tu_tabla")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer rows.Close()
+
+    // Crear un archivo Parquet usando DuckDB
+    duckConn, err := duckdb.Connect()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer duckConn.Close()
+
+    // Crear una tabla temporal en DuckDB para almacenar los resultados
+    _, err = duckConn.Exec("CREATE TABLE temp_results AS SELECT * FROM read_csv_auto('stdin')")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Preparar el comando para copiar los datos desde PostgreSQL a DuckDB
+    for rows.Next() {
+        var col1 int
+        var col2 string
+        // Añade más variables según la estructura de tu tabla
+
+        if err := rows.Scan(&col1, &col2); err != nil {
+            log.Fatal(err)
+        }
+
+        // Insertar los datos en la tabla temporal de DuckDB
+        _, err = duckConn.Exec("INSERT INTO temp_results VALUES (?, ?)", col1, col2)
+        if err != nil {
+            log.Fatal(err)
+        }
+    }
+
+    // Exportar los resultados a un archivo Parquet
+    outputFile := "ruta/del/archivo.parquet"
+    _, err = duckConn.Exec(fmt.Sprintf("COPY (SELECT * FROM temp_results) TO '%s' (FORMAT 'parquet')", outputFile))
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println("Archivo Parquet creado exitosamente:", outputFile)
+}
+
+
+
+
+
+
+
+
+###############################################################
+###############################################################  Ejemplo en Golang
+##############################################################Este ejemplo asume que tienes DuckDB configurado y que estás utilizando la extensión de PostgreSQL (read_postgres).
+
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+
+	_ "github.com/marcboeker/go-duckdb" // Binding de DuckDB para Go
+)
+
+func main() {
+	// Conectar a DuckDB
+	conn, err := sql.Open("duckdb", "")
+	if err != nil {
+		log.Fatalf("Error al conectar a DuckDB: %v", err)
+	}
+	defer conn.Close()
+
+	// Habilitar la extensión de PostgreSQL
+	_, err = conn.Exec("INSTALL postgres; LOAD postgres;")
+	if err != nil {
+		log.Fatalf("Error al instalar/cargar la extensión de PostgreSQL: %v", err)
+	}
+
+	// Ejecutar la consulta y exportar a Parquet
+	query := `
+	COPY (
+		SELECT * FROM read_postgres(
+			'postgres://usuario:contraseña@localhost:5432/tu_base_de_datos',
+			'SELECT * FROM tu_tabla'
+		)
+	) TO './output/archivo.parquet' (FORMAT 'parquet');
+	`
+	_, err = conn.Exec(query)
+	if err != nil {
+		log.Fatalf("Error al ejecutar la consulta: %v", err)
+	}
+
+	fmt.Println("Archivo Parquet generado con éxito.")
+}
+
+
+
+
+
+
+
+###############################################################
+###############################################################
+###############################################################Código para generar archivos Parquet particionados 
+El siguiente ejemplo particiona los datos en función de una columna específica (region) y guarda cada partición en un archivo separado.
+
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/xitongsys/parquet-go/writer"
+)
+
+// Definir una estructura para el esquema de Parquet
+type DataRecord struct {
+	Region   string `parquet:"name=region, type=BYTE_ARRAY, convertedtype=UTF8"`
+	Product  string `parquet:"name=product, type=BYTE_ARRAY, convertedtype=UTF8"`
+	Sales    int32  `parquet:"name=sales, type=INT32"`
+}
+
+func main() {
+	// Datos de ejemplo
+	data := []DataRecord{
+		{"Norte", "A", 100},
+		{"Norte", "B", 200},
+		{"Sur", "A", 150},
+		{"Sur", "B", 300},
+	}
+
+	// Crear particiones manualmente por la columna "region"
+	partitions := make(map[string][]DataRecord)
+	for _, record := range data {
+		partitions[record.Region] = append(partitions[record.Region], record)
+	}
+
+	// Guardar cada partición como un archivo Parquet separado
+	for region, records := range partitions {
+		// Crear directorio para la partición
+		dir := "parquet_particionado/" + region
+		err := os.MkdirAll(dir, os.ModePerm)
+		if err != nil {
+			log.Fatalf("Error creando directorio: %v", err)
+		}
+
+		// Archivo Parquet para la partición
+		fileName := dir + "/data.parquet"
+		f, err := os.Create(fileName)
+		if err != nil {
+			log.Fatalf("Error creando archivo Parquet: %v", err)
+		}
+		defer f.Close()
+
+		// Escribir datos en formato Parquet
+		pw, err := writer.NewParquetWriter(f, new(DataRecord), 4) // 4 goroutines para concurrencia
+		if err != nil {
+			log.Fatalf("Error creando escritor Parquet: %v", err)
+		}
+		pw.RowGroupSize = 128 * 1024 * 1024 // Tamaño del grupo de filas
+		pw.PageSize = 8 * 1024             // Tamaño de la página
+
+		for _, record := range records {
+			if err := pw.Write(record); err != nil {
+				log.Fatalf("Error escribiendo en archivo Parquet: %v", err)
+			}
+		}
+
+		// Cerrar el escritor Parquet
+		if err := pw.WriteStop(); err != nil {
+			log.Fatalf("Error cerrando archivo Parquet: %v", err)
+		}
+		log.Printf("Partición '%s' guardada en %s", region, fileName)
+	}
+}
+
+
+
+
+###############################################################
+##############################################################################################################################
+##############################################################################################################################
+##############################################################################################################################
+##############################################################################################################################
+###############################################################Te proporcionaré tres ejemplos: uno en Python usando DuckDB para realizar una consulta a una base de datos PostgreSQL y exportar los resultados a múltiples archivos Parquet con partición; otro ejemplo en Golang utilizando DuckDB de la misma manera; y finalmente, un ejemplo en Golang usando solo Go y el paquete Parquet-Go.
+
+1. Python usando DuckDB para consultar PostgreSQL y exportar a archivos Parquet particionados
+Requisitos:
+
+Instalar DuckDB y las bibliotecas necesarias:
+bash
+Copiar código
+pip install duckdb pandas pyarrow
+Código en Python:
+
+python
+Copiar código
+import duckdb
+
+# Conectar a DuckDB
+con = duckdb.connect()
+
+# Conectar a PostgreSQL
+conn_string = "postgresql://usuario:contraseña@localhost:5432/tu_base_de_datos"
+
+# Ejecutar la consulta en PostgreSQL y exportar a múltiples archivos Parquet particionados
+query = """
+    SELECT * 
+    FROM read_postgres(
+        '{}', 
+        'SELECT * FROM tu_tabla'
+    )
+""".format(conn_string)
+
+# Ejecutar la consulta y particionar los resultados en archivos Parquet por una columna (por ejemplo, 'region')
+output_path = './parquet_files/region='
+
+con.execute(f"""
+    COPY ({query})
+    TO '{output_path}' 
+    (FORMAT PARQUET, PARTITION BY region);
+""")
+
+print("Archivos Parquet generados con éxito.")
+con.close()
+Explicación:
+
+DuckDB conecta a PostgreSQL con la función read_postgres.
+Los datos se particionan usando el parámetro PARTITION BY en la consulta, donde se usa la columna region para dividir los archivos de salida.
+El resultado se guarda en archivos Parquet en una carpeta especificada.
+2. Golang usando DuckDB para consultar PostgreSQL y exportar a archivos Parquet particionados
+Requisitos:
+
+Instalar el binding de DuckDB para Go.
+bash
+Copiar código
+go get github.com/marcboeker/go-duckdb
+Código en Golang:
+
+go
+Copiar código
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+
+	_ "github.com/marcboeker/go-duckdb" // DuckDB binding
+)
+
+func main() {
+	// Conectar a DuckDB
+	conn, err := sql.Open("duckdb", "")
+	if err != nil {
+		log.Fatalf("Error al conectar a DuckDB: %v", err)
+	}
+	defer conn.Close()
+
+	// Instalar y cargar extensión de PostgreSQL
+	_, err = conn.Exec("INSTALL postgres; LOAD postgres;")
+	if err != nil {
+		log.Fatalf("Error al instalar/cargar la extensión de PostgreSQL: %v", err)
+	}
+
+	// Definir la consulta para exportar los datos
+	connString := "postgresql://usuario:contraseña@localhost:5432/tu_base_de_datos"
+	query := fmt.Sprintf(`
+	COPY (
+		SELECT * FROM read_postgres(
+			'%s', 
+			'SELECT * FROM tu_tabla'
+		)
+	) TO './parquet_files/region=' (FORMAT 'parquet', PARTITION BY region);
+	`, connString)
+
+	// Ejecutar la consulta para exportar los datos a archivos Parquet
+	_, err = conn.Exec(query)
+	if err != nil {
+		log.Fatalf("Error al ejecutar la consulta: %v", err)
+	}
+
+	fmt.Println("Archivos Parquet generados con éxito.")
+}
+Explicación:
+
+Se establece una conexión con DuckDB.
+Se usa la extensión postgres de DuckDB para conectar con PostgreSQL.
+La consulta extrae datos de PostgreSQL y los exporta a archivos Parquet, particionando los datos por la columna region.
+3. Golang usando solo Parquet-Go para realizar una consulta en PostgreSQL y exportar a archivos Parquet particionados
+En este ejemplo, no utilizamos DuckDB, sino que implementamos la consulta en PostgreSQL directamente desde Go utilizando el paquete pq para conectar a PostgreSQL y parquet-go para crear el archivo Parquet.
+
+Requisitos:
+
+Instalar las dependencias necesarias:
+bash
+Copiar código
+go get github.com/lib/pq
+go get github.com/apache/parquet-go
+Código en Golang:
+
+go
+Copiar código
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+	"os"
+
+	_ "github.com/lib/pq"         // PostgreSQL driver
+	"github.com/apache/parquet-go" // Parquet-Go package
+)
+
+func main() {
+	// Conectar a PostgreSQL
+	connStr := "postgres://usuario:contraseña@localhost:5432/tu_base_de_datos"
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Ejecutar la consulta para obtener los datos
+	rows, err := db.Query("SELECT * FROM tu_tabla")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	// Crear un archivo Parquet
+	f, err := os.Create("output.parquet")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	// Crear un escritor Parquet
+	writer, err := parquet.NewFileWriter(f, parquet.NewSchemaFromStruct(MyDataStruct{}))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer writer.Close()
+
+	// Leer los datos de PostgreSQL y escribir en el archivo Parquet
+	for rows.Next() {
+		var record MyDataStruct
+		err := rows.Scan(&record.Column1, &record.Column2)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Escribir el registro en el archivo Parquet
+		err = writer.Write(record)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// Verificar si hubo errores al iterar sobre las filas
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Archivo Parquet generado con éxito.")
+}
+
+// Definir la estructura de los datos a guardar en Parquet
+type MyDataStruct struct {
+	Column1 string `parquet:"name=column1, type=BYTE_ARRAY, convertedtype=UTF8"`
+	Column2 string `parquet:"name=column2, type=BYTE_ARRAY, convertedtype=UTF8"`
+}
+Explicación:
+
+PostgreSQL se consulta directamente con el paquete pq de Go.
+Los datos se almacenan en una estructura Go (MyDataStruct).
+Utilizamos parquet-go para escribir los resultados directamente en un archivo Parquet.
+Ventajas de cada enfoque en Golang
+Golang con DuckDB:
+Rendimiento: Golang y DuckDB ofrecen un buen rendimiento, especialmente cuando se manejan grandes volúmenes de datos.
+Facilidad: DuckDB simplifica la interacción con bases de datos (como PostgreSQL) y el formato Parquet sin tener que lidiar con detalles de bajo nivel.
+Escalabilidad: Con el uso de DuckDB, es fácil dividir y particionar grandes volúmenes de datos sin necesidad de escribir mucho código adicional.
+Golang con parquet-go:
+Control total: Tienes control total sobre la forma en que se gestionan las consultas, la estructura de los datos y cómo se escriben en los archivos Parquet.
+Sin dependencias externas: No dependes de DuckDB o ninguna otra herramienta, lo que puede ser beneficioso en términos de mantenimiento y portabilidad.
+Flexibilidad: Puedes realizar transformaciones personalizadas de los datos antes de escribirlos en Parquet, pero requiere más trabajo manual.
+Conclusión
+Si necesitas un enfoque rápido y directo para procesar datos y exportarlos a Parquet con particiones y un mínimo esfuerzo, usar DuckDB en Go o Python es más recomendable.
+Si prefieres un control completo sobre el proceso, o si estás manejando casos más complejos donde la transformación de datos es clave, entonces usar Golang con parquet-go puede ser más adecuado, aunque requiere más esfuerzo para manejar conexiones a PostgreSQL y particionamiento.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################################################### Para conectarte a PostgreSQL, ejecutar dos consultas concurrentemente 
+##############################################################
+###############################################################  ejmplo desde Golang perplexity
+
+
+Respuesta
+Para conectarte a PostgreSQL, ejecutar dos consultas concurrentemente y guardar los resultados en archivos Parquet diferentes utilizando DuckDB, puedes seguir los siguientes pasos en Go. Este ejemplo ilustrará cómo realizar las consultas y exportar los resultados a archivos Parquet.
+Requisitos Previos
+Instalar DuckDB: Asegúrate de tener DuckDB disponible para su uso en tu entorno.
+Instalar PostgreSQL: Necesitarás acceso a una base de datos PostgreSQL.
+Instalar las bibliotecas necesarias en Go:
+pq para conectarse a PostgreSQL.
+duckdb para interactuar con DuckDB.
+Puedes instalar las bibliotecas necesarias usando:
+bash
+go get github.com/lib/pq
+go get github.com/duckdb/duckdb-go
+
+Ejemplo de Código en Go
+A continuación se muestra un ejemplo que ilustra cómo conectarse a PostgreSQL, ejecutar dos consultas concurrentemente y guardar los resultados en archivos Parquet utilizando DuckDB.
+go
+package main
+
+import (
+    "database/sql"
+    "fmt"
+    "log"
+    "sync"
+
+    "github.com/lib/pq"
+    "github.com/duckdb/duckdb-go"
+)
+
+func exportToParquet(query string, outputFile string, wg *sync.WaitGroup) {
+    defer wg.Done()
+
+    // Conectar a DuckDB
+    duckConn, err := duckdb.Connect()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer duckConn.Close()
+
+    // Crear una tabla temporal en DuckDB
+    _, err = duckConn.Exec("CREATE TABLE temp_results AS SELECT * FROM read_csv_auto('stdin')")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Insertar datos desde PostgreSQL a DuckDB
+    _, err = duckConn.Exec(fmt.Sprintf("COPY (SELECT * FROM read_postgres('postgres://usuario:contraseña@localhost:5432/tu_base_de_datos', '%s')) TO 'stdin'", query))
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Exportar los resultados a un archivo Parquet
+    _, err = duckConn.Exec(fmt.Sprintf("COPY (SELECT * FROM temp_results) TO '%s' (FORMAT 'parquet')", outputFile))
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Printf("Archivo Parquet creado exitosamente: %s\n", outputFile)
+}
+
+func main() {
+    // Conexión a PostgreSQL
+    connStr := "user=usuario password=contraseña dbname=tu_base_de_datos host=localhost sslmode=disable"
+    pgDB, err := sql.Open("postgres", connStr)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer pgDB.Close()
+
+    // Definir las consultas y archivos de salida
+    queries := []struct {
+        query      string
+        outputFile string
+    }{
+        {"SELECT * FROM tabla1", "resultado_tabla1.parquet"},
+        {"SELECT * FROM tabla2", "resultado_tabla2.parquet"},
+    }
+
+    var wg sync.WaitGroup
+
+    // Ejecutar las consultas concurrentemente
+    for _, q := range queries {
+        wg.Add(1)
+        go exportToParquet(q.query, q.outputFile, &wg)
+    }
+
+    // Esperar a que todas las goroutines terminen
+    wg.Wait()
+}
+
+Explicación del Código
+Conexión a PostgreSQL: Se establece una conexión a la base de datos PostgreSQL utilizando la cadena de conexión adecuada.
+Definición de Consultas: Se definen las consultas SQL que se ejecutarán y los nombres de los archivos Parquet donde se guardarán los resultados.
+Goroutines para Ejecución Concurrente: Se utiliza un sync.WaitGroup para manejar la concurrencia. Cada consulta se ejecuta en una goroutine separada.
+Función exportToParquet:
+Conecta a DuckDB.
+Crea una tabla temporal donde se insertarán los resultados de la consulta desde PostgreSQL.
+Utiliza el comando COPY para insertar datos desde la consulta ejecutada en PostgreSQL.
+Exporta los resultados a un archivo Parquet utilizando otro comando COPY.
+Esperar a que Terminen Todas las Goroutines: Se espera que todas las goroutines terminen antes de finalizar el programa.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################################################### Para conectarte a PostgreSQL, ejecutar dos consultas concurrentemente 
+##############################################################
+###############################################################  ejmplo desde Golang chatgpt
+
+
+
+
+
+
+
+
+
+
+Sí, puedo proporcionarte un ejemplo sobre cómo conectar a PostgreSQL desde un programa en Go, ejecutar dos consultas de forma concurrente y guardar los resultados en archivos Parquet diferentes utilizando DuckDB. A continuación te muestro cómo hacerlo paso a paso:
+
+Requisitos previos:
+Instalar DuckDB en tu entorno de Go.
+Instalar un controlador de PostgreSQL para Go, como pgx o github.com/lib/pq.
+Instalar duckdb Go bindings, que te permitirán usar DuckDB en Go.
+Pasos:
+Conectar a PostgreSQL.
+Ejecutar dos consultas concurrentemente.
+Guardar los resultados de las consultas en archivos Parquet diferentes utilizando DuckDB.
+Ejemplo en Go
+go
+Copiar código
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"database/sql"
+	"sync"
+
+	_ "github.com/lib/pq"
+	"github.com/duckdb/duckdb-go"
+)
+
+func executeQueryAndExportToParquet(query string, connStr string, outputFile string, wg *sync.WaitGroup) {
+	defer wg.Done() // Marca esta gorutina como completada
+
+	// Conectar a PostgreSQL
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatalf("Error connecting to PostgreSQL: %v", err)
+	}
+	defer db.Close()
+
+	// Ejecutar la consulta
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatalf("Error executing query: %v", err)
+	}
+	defer rows.Close()
+
+	// Conectar a DuckDB
+	duckConn, err := duckdb.Open(":memory:") // Puedes usar un archivo en lugar de :memory: para persistencia
+	if err != nil {
+		log.Fatalf("Error connecting to DuckDB: %v", err)
+	}
+	defer duckConn.Close()
+
+	// Crear una tabla temporal en DuckDB
+	_, err = duckConn.Exec("CREATE TABLE temp_table AS SELECT * FROM read_parquet('data_source.parquet')")
+	if err != nil {
+		log.Fatalf("Error creating table in DuckDB: %v", err)
+	}
+
+	// Exportar la consulta a un archivo Parquet
+	exportQuery := fmt.Sprintf("COPY (SELECT * FROM temp_table) TO '%s' (FORMAT PARQUET);", outputFile)
+	_, err = duckConn.Exec(exportQuery)
+	if err != nil {
+		log.Fatalf("Error exporting to Parquet: %v", err)
+	}
+
+	fmt.Printf("Archivo Parquet generado con éxito: %s\n", outputFile)
+}
+
+func main() {
+	// Configuración de la conexión a PostgreSQL
+	connStr := "postgresql://usuario:contraseña@localhost:5432/tu_base_de_datos"
+
+	// Consultas a ejecutar
+	query1 := "SELECT * FROM tabla1 LIMIT 100"
+	query2 := "SELECT * FROM tabla2 LIMIT 100"
+
+	// Esperar a que ambas consultas terminen
+	var wg sync.WaitGroup
+
+	// Ejecutar las consultas concurrentemente
+	wg.Add(2)
+	go executeQueryAndExportToParquet(query1, connStr, "output1.parquet", &wg)
+	go executeQueryAndExportToParquet(query2, connStr, "output2.parquet", &wg)
+
+	// Esperar que ambas gorutinas terminen
+	wg.Wait()
+}
+Explicación:
+Conexión a PostgreSQL:
+Usamos el paquete github.com/lib/pq para conectar a PostgreSQL. Asegúrate de que el driver esté correctamente instalado en tu entorno de Go.
+Ejecución de consultas concurrentes:
+Se usan gorutinas y un sync.WaitGroup para ejecutar ambas consultas en paralelo.
+Conexión y uso de DuckDB:
+Se utiliza DuckDB en memoria para crear tablas temporales y ejecutar el comando de exportación a Parquet.
+Exportación a Parquet:
+Se usa la sentencia COPY TO de DuckDB para exportar los resultados de la consulta en formato Parquet.
+Sincronización:
+El sync.WaitGroup garantiza que el programa espere a que ambas consultas terminen antes de finalizar.
+Ventajas del enfoque:
+Concurrente: Al usar gorutinas, las consultas se ejecutan en paralelo, lo que puede mejorar el rendimiento cuando se tiene que ejecutar más de una consulta.
+Eficiencia: DuckDB maneja la exportación a Parquet de manera eficiente en memoria, lo que facilita trabajar con grandes volúmenes de datos sin tener que cargarlos completamente en la memoria.
+Parquet: El uso del formato Parquet es ideal para manejar grandes conjuntos de datos debido a su eficiencia en compresión y el soporte para la paralelización en otras herramientas.
+Consideraciones adicionales:
+Persistencia de DuckDB: Si quieres que los datos persistan, puedes abrir una base de datos de DuckDB en un archivo en lugar de :memory:.
+Control de errores: Asegúrate de manejar correctamente los posibles errores durante la ejecución de consultas y la exportación a Parquet, ya que pueden surgir problemas con la conexión o la sintaxis de las consultas.
+Este enfoque es bastante eficiente para manejar consultas concurrentes y la exportación a Parquet en Go utilizando DuckDB.
+
+
+
+
+
+
+
+
+
+
+############################################################### Para conectarte a PostgreSQL, ejecutar dos consultas concurrentemente usando memcached
+##############################################################
+###############################################################  ejmplo desde Golang perplexity
+
+
+
+
+
+
+
+
+
+
+
+Puedes instalar las bibliotecas necesarias usando:
+bash
+go get github.com/lib/pq
+go get github.com/duckdb/duckdb-go
+go get github.com/bradfitz/gomemcache/memcache
+
+Ejemplo de Código en Go
+A continuación se muestra un ejemplo que ilustra cómo conectarse a PostgreSQL, utilizar Memcached para almacenar resultados en caché, ejecutar dos consultas concurrentemente y guardar los resultados en archivos Parquet utilizando DuckDB.
+go
+package main
+
+import (
+    "database/sql"
+    "encoding/json"
+    "fmt"
+    "log"
+    "sync"
+
+    "github.com/bradfitz/gomemcache/memcache"
+    "github.com/lib/pq"
+    "github.com/duckdb/duckdb-go"
+)
+
+func exportToParquet(query string, outputFile string, mc *memcache.Client, wg *sync.WaitGroup) {
+    defer wg.Done()
+
+    // Intentar obtener resultados de Memcached
+    cachedData, err := mc.Get(query)
+    if err == nil {
+        // Si hay datos en caché, escribirlos directamente a Parquet
+        log.Printf("Usando datos en caché para la consulta: %s\n", query)
+        writeParquetFromJSON(cachedData.Value, outputFile)
+        return
+    }
+
+    // Conectar a DuckDB
+    duckConn, err := duckdb.Connect()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer duckConn.Close()
+
+    // Crear una tabla temporal en DuckDB
+    _, err = duckConn.Exec("CREATE TABLE temp_results AS SELECT * FROM read_csv_auto('stdin')")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Conectar a PostgreSQL
+    connStr := "user=usuario password=contraseña dbname=tu_base_de_datos host=localhost sslmode=disable"
+    pgDB, err := sql.Open("postgres", connStr)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer pgDB.Close()
+
+    // Ejecutar la consulta en PostgreSQL
+    rows, err := pgDB.Query(query)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer rows.Close()
+
+    // Recoger los resultados y almacenarlos en DuckDB
+    for rows.Next() {
+        var col1 int
+        var col2 string
+        // Añade más variables según la estructura de tu tabla
+
+        if err := rows.Scan(&col1, &col2); err != nil {
+            log.Fatal(err)
+        }
+
+        // Insertar los datos en la tabla temporal de DuckDB
+        _, err = duckConn.Exec("INSERT INTO temp_results VALUES (?, ?)", col1, col2)
+        if err != nil {
+            log.Fatal(err)
+        }
+    }
+
+    // Exportar los resultados a un archivo Parquet
+    _, err = duckConn.Exec(fmt.Sprintf("COPY (SELECT * FROM temp_results) TO '%s' (FORMAT 'parquet')", outputFile))
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Almacenar los resultados en Memcached
+    resultsJSON, _ := json.Marshal(outputFile) // Aquí deberías almacenar el resultado real si es necesario.
+    mc.Set(&memcache.Item{Key: query, Value: resultsJSON})
+
+    fmt.Printf("Archivo Parquet creado exitosamente: %s\n", outputFile)
+}
+
+func writeParquetFromJSON(jsonData []byte, outputFile string) {
+	// Aquí deberías implementar la lógica para escribir directamente el JSON a Parquet.
+	// Este es un lugar donde puedes usar DuckDB o cualquier otra biblioteca para convertir JSON a Parquet.
+	fmt.Printf("Escribiendo datos desde JSON a Parquet: %s\n", outputFile)
+}
+
+func main() {
+	// Conectar a Memcached
+	mc := memcache.New("localhost:11211")
+
+	var wg sync.WaitGroup
+
+	// Definir las consultas y archivos de salida
+	queries := []struct {
+		query      string
+		outputFile string
+	}{
+		{"SELECT * FROM tabla1", "resultado_tabla1.parquet"},
+		{"SELECT * FROM tabla2", "resultado_tabla2.parquet"},
+	}
+
+	// Ejecutar las consultas concurrentemente
+	for _, q := range queries {
+		wg.Add(1)
+		go exportToParquet(q.query, q.outputFile, mc, &wg)
+	}
+
+	// Esperar a que todas las goroutines terminen
+	wg.Wait()
+}
+
+Explicación del Código
+Conexión a Memcached: Se establece una conexión con el servidor Memcached utilizando gomemcache.
+Función exportToParquet:
+Intenta obtener resultados de Memcached utilizando la consulta como clave.
+Si se encuentran resultados en caché, se llama a una función (que deberías implementar) para escribir esos resultados directamente en un archivo Parquet.
+Si no hay datos en caché, se conecta a DuckDB y PostgreSQL para ejecutar la consulta y almacenar los resultados.
+Los resultados se insertan en una tabla temporal de DuckDB y luego se exportan a un archivo Parquet.
+Finalmente, se almacenan los resultados (o una referencia) en Memcached para futuras consultas.
+Función writeParquetFromJSON: Esta función es un marcador de posición donde deberías implementar la lógica para convertir datos JSON a Parquet utilizando DuckDB o cualquier otra biblioteca que prefieras.
+Ejecución Concurrente: Se utilizan goroutines y un sync.WaitGroup para ejecutar las consultas concurrentemente.
+
+
+
+
+
+
+
+
+
+
+
+############################################################### Para conectarte a PostgreSQL, ejecutar dos consultas concurrentemente usando memcached
+##############################################################
+###############################################################  ejmplo desde Golang chargpt
+
+
+
+Claro, puedo agregar el uso de Memcached al ejemplo anterior en Go. La idea sería utilizar Memcached como un sistema de almacenamiento en caché para almacenar temporalmente los resultados de las consultas de PostgreSQL, y luego utilizar esos datos almacenados en caché para exportarlos a Parquet usando DuckDB.
+
+Requisitos adicionales:
+Instalar el paquete de Memcached para Go: Utilizaremos github.com/bradfitz/gomemcache/memcache.
+Instalar Memcached en tu entorno: Asegúrate de tener un servidor de Memcached corriendo.
+Pasos:
+Conectarse a Memcached.
+Verificar si los resultados de las consultas ya están en la caché antes de ejecutar la consulta.
+Si no están en la caché, ejecutar la consulta a PostgreSQL, almacenar los resultados en Memcached, y luego exportarlos a Parquet usando DuckDB.
+Ejemplo de código con Memcached
+go
+Copiar código
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"database/sql"
+	"encoding/json"
+	"sync"
+
+	_ "github.com/lib/pq"
+	"github.com/duckdb/duckdb-go"
+	"github.com/bradfitz/gomemcache/memcache"
+)
+
+// Función para ejecutar la consulta, guardar en la caché y exportar a Parquet
+func executeQueryAndExportToParquet(query string, connStr string, outputFile string, mc *memcache.Client, wg *sync.WaitGroup) {
+	defer wg.Done() // Marca esta gorutina como completada
+
+	// Verificar si los resultados están en la caché
+	cacheKey := fmt.Sprintf("query_cache:%s", query)
+	item, err := mc.Get(cacheKey)
+	if err == nil {
+		// Si la consulta está en caché, usar los datos en caché
+		var cachedData []map[string]interface{}
+		if err := json.Unmarshal(item.Value, &cachedData); err != nil {
+			log.Fatalf("Error unmarshalling cached data: %v", err)
+		}
+		// Aquí guardamos el resultado en Parquet usando DuckDB
+		saveToParquetFromCache(cachedData, outputFile)
+		fmt.Println("Datos obtenidos de la caché y exportados a Parquet.")
+		return
+	}
+
+	// Si no están en caché, conectarse a PostgreSQL
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatalf("Error connecting to PostgreSQL: %v", err)
+	}
+	defer db.Close()
+
+	// Ejecutar la consulta
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Fatalf("Error executing query: %v", err)
+	}
+	defer rows.Close()
+
+	// Recuperar los resultados de la consulta
+	var result []map[string]interface{}
+	columns, _ := rows.Columns()
+	for rows.Next() {
+		// Crear un mapa para almacenar cada fila
+		values := make([]interface{}, len(columns))
+		for i := range values {
+			values[i] = new(interface{})
+		}
+		if err := rows.Scan(values...); err != nil {
+			log.Fatalf("Error scanning row: %v", err)
+		}
+
+		// Convertir la fila a un mapa
+		rowData := make(map[string]interface{})
+		for i, col := range columns {
+			rowData[col] = *(values[i].(*interface{}))
+		}
+		result = append(result, rowData)
+	}
+
+	// Almacenar los resultados en la caché
+	cacheData, err := json.Marshal(result)
+	if err != nil {
+		log.Fatalf("Error marshalling data to JSON: %v", err)
+	}
+	mc.Set(&memcache.Item{
+		Key:   cacheKey,
+		Value: cacheData,
+	})
+
+	// Aquí guardamos los resultados en Parquet usando DuckDB
+	saveToParquetFromCache(result, outputFile)
+	fmt.Println("Datos obtenidos de PostgreSQL y exportados a Parquet.")
+}
+
+// Función para guardar los resultados en un archivo Parquet utilizando DuckDB
+func saveToParquetFromCache(data []map[string]interface{}, outputFile string) {
+	// Conectar a DuckDB en memoria (o en archivo si se desea persistencia)
+	duckConn, err := duckdb.Open(":memory:")
+	if err != nil {
+		log.Fatalf("Error connecting to DuckDB: %v", err)
+	}
+	defer duckConn.Close()
+
+	// Crear una tabla temporal en DuckDB
+	_, err = duckConn.Exec("CREATE TABLE temp_table (data JSONB);")
+	if err != nil {
+		log.Fatalf("Error creating table in DuckDB: %v", err)
+	}
+
+	// Insertar los datos en la tabla de DuckDB
+	for _, row := range data {
+		// Convertir la fila en una cadena JSON para insertar en la tabla
+		jsonData, err := json.Marshal(row)
+		if err != nil {
+			log.Fatalf("Error marshalling row to JSON: %v", err)
+		}
+
+		_, err = duckConn.Exec("INSERT INTO temp_table VALUES (?);", jsonData)
+		if err != nil {
+			log.Fatalf("Error inserting data into DuckDB: %v", err)
+		}
+	}
+
+	// Exportar los resultados a un archivo Parquet
+	exportQuery := fmt.Sprintf("COPY (SELECT * FROM temp_table) TO '%s' (FORMAT PARQUET);", outputFile)
+	_, err = duckConn.Exec(exportQuery)
+	if err != nil {
+		log.Fatalf("Error exporting to Parquet: %v", err)
+	}
+
+	fmt.Printf("Archivo Parquet generado con éxito: %s\n", outputFile)
+}
+
+func main() {
+	// Configuración de la conexión a PostgreSQL
+	connStr := "postgresql://usuario:contraseña@localhost:5432/tu_base_de_datos"
+
+	// Conectar a Memcached
+	mc := memcache.New("localhost:11211") // Asegúrate de tener Memcached corriendo
+
+	// Consultas a ejecutar
+	query1 := "SELECT * FROM tabla1 LIMIT 100"
+	query2 := "SELECT * FROM tabla2 LIMIT 100"
+
+	// Esperar a que ambas consultas terminen
+	var wg sync.WaitGroup
+
+	// Ejecutar las consultas concurrentemente
+	wg.Add(2)
+	go executeQueryAndExportToParquet(query1, connStr, "output1.parquet", mc, &wg)
+	go executeQueryAndExportToParquet(query2, connStr, "output2.parquet", mc, &wg)
+
+	// Esperar que ambas gorutinas terminen
+	wg.Wait()
+}
+Explicación:
+Memcached:
+
+Se utiliza github.com/bradfitz/gomemcache/memcache para conectarse a un servidor Memcached que actúa como caché.
+Cuando una consulta se ejecuta por primera vez, los resultados se almacenan en Memcached en formato JSON.
+Si la misma consulta se realiza posteriormente, los resultados se recuperan de la caché, evitando la necesidad de ejecutar nuevamente la consulta a la base de datos.
+Consultas a PostgreSQL:
+
+Se usan consultas SQL para obtener los datos desde PostgreSQL y almacenar los resultados en Memcached.
+DuckDB y exportación a Parquet:
+
+Una vez obtenidos los resultados, ya sea de la caché o directamente de PostgreSQL, se guardan en un archivo Parquet utilizando DuckDB.
+Los datos se insertan en una tabla temporal de DuckDB y luego se exportan a Parquet.
+Concurrencia:
+
+Las consultas se ejecutan concurrentemente utilizando gorutinas para mejorar el rendimiento.
+Ventajas de usar Memcached:
+Rendimiento mejorado: Al almacenar en caché los resultados de las consultas, las consultas posteriores se ejecutan más rápido al obtener los datos directamente de Memcached.
+Reducir la carga en la base de datos: Si las consultas son repetidas o si los datos no cambian con frecuencia, se evita hacer las mismas consultas al servidor PostgreSQL.
+Escalabilidad: Memcached permite manejar una carga elevada al distribuir la memoria en caché.
+Este enfoque mejora el rendimiento y la eficiencia al reducir la cantidad de consultas realizadas a la base de datos y aprovechar la memoria de Memcached para almacenar resultados temporales.
+
+
+
+
+
+
+
+
+############################################################### 
+##############################################################
+############################################################### ocupar memcached al leer un archivo .parquet mediante duckdb perplexity
+
+Sí, es posible utilizar Memcached al leer un archivo Parquet mediante DuckDB, aunque no de manera directa. DuckDB permite realizar consultas sobre archivos Parquet directamente sin necesidad de cargar los datos en memoria o persistirlos. Sin embargo, la integración con Memcached puede ser útil para almacenar resultados de consultas previas y evitar la ejecución repetida de las mismas consultas en el archivo Parquet.
+Cómo Funciona la Integración
+Consulta a DuckDB: Puedes usar DuckDB para leer directamente desde un archivo Parquet utilizando la función read_parquet. Esto permite ejecutar consultas SQL sobre los datos almacenados en el archivo Parquet.
+Uso de Memcached: Antes de realizar una consulta, puedes verificar si los resultados ya están almacenados en Memcached. Si los resultados están en caché, puedes utilizarlos directamente, evitando así la necesidad de volver a ejecutar la consulta sobre el archivo Parquet.
+Almacenamiento en Memcached: Después de ejecutar una consulta y obtener resultados, puedes almacenar esos resultados en Memcached para futuras referencias, lo que mejora el rendimiento al reducir el tiempo de acceso a datos que ya han sido consultados.
+Ejemplo de Flujo de Trabajo
+Aquí hay un flujo de trabajo simplificado que ilustra cómo podrías implementar esta lógica:
+Conectar a Memcached: Establece una conexión con el servidor Memcached.
+Verificar Caché: Antes de realizar una consulta, verifica si los resultados ya están almacenados en Memcached.
+Ejecutar Consulta: Si no hay resultados en caché, ejecuta la consulta en DuckDB usando read_parquet.
+Almacenar Resultados: Almacena los resultados obtenidos en Memcached para futuras consultas.
+Ejemplo de Código en Go
+A continuación se presenta un ejemplo simplificado que ilustra cómo podrías implementar este flujo utilizando Go:
+go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "log"
+
+    "github.com/bradfitz/gomemcache/memcache"
+    "github.com/duckdb/duckdb-go"
+)
+
+func queryParquetWithCache(query string, parquetFile string, mc *memcache.Client) {
+    // Verificar si hay datos en caché
+    cachedItem, err := mc.Get(query)
+    if err == nil {
+        // Si hay datos en caché, deserializarlos y usarlos
+        var result interface{}
+        json.Unmarshal(cachedItem.Value, &result)
+        fmt.Println("Usando datos en caché:", result)
+        return
+    }
+
+    // Conectar a DuckDB
+    duckConn, err := duckdb.Connect()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer duckConn.Close()
+
+    // Ejecutar la consulta en DuckDB
+    rows, err := duckConn.Query(fmt.Sprintf("SELECT * FROM read_parquet('%s') WHERE %s", parquetFile, query))
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer rows.Close()
+
+    // Procesar resultados
+    var results []interface{}
+    for rows.Next() {
+        var row interface{}
+        if err := rows.Scan(&row); err != nil {
+            log.Fatal(err)
+        }
+        results = append(results, row)
+    }
+
+    // Almacenar resultados en Memcached
+    resultJSON, _ := json.Marshal(results)
+    mc.Set(&memcache.Item{Key: query, Value: resultJSON})
+
+    fmt.Println("Resultados:", results)
+}
+
+func main() {
+    // Conectar a Memcached
+    mc := memcache.New("localhost:11211")
+
+    // Definir el archivo Parquet y la consulta
+    parquetFile := "ruta/al/archivo.parquet"
+    query := "columna1 = 'valor'"
+
+    // Ejecutar la consulta con caché
+    queryParquetWithCache(query, parquetFile, mc)
+}
+
+Explicación del Código
+Conexión a Memcached: Se establece una conexión con el servidor Memcached.
+Verificación de Caché: Se intenta obtener los resultados de la consulta desde Memcached.
+Consulta a DuckDB: Si no hay resultados en caché, se ejecuta la consulta sobre el archivo Parquet utilizando DuckDB.
+Almacenamiento en Caché: Los resultados obtenidos se serializan y se almacenan en Memcached para futuras consultas.
+
+
+
+############################################################### 
+##############################################################
+############################################################### ocupar memcached al leer un archivo .parquet mediante duckdb chat gpt
+
+
+Sí, puedes utilizar Memcached para almacenar y recuperar datos que provienen de un archivo .parquet al ser leído mediante DuckDB, aunque esto no es una operación estándar o directa de DuckDB. Sin embargo, puedes manejar la lógica de caché en tu código para optimizar el acceso a los datos de Parquet.
+
+La idea sería usar Memcached como una capa de almacenamiento intermedio, donde:
+
+Cuando se accede a un archivo .parquet (que puede ser costoso en términos de tiempo), se verifica si los datos ya están en Memcached.
+Si los datos están en Memcached, los recuperas directamente desde la memoria.
+Si no están, los cargas desde el archivo .parquet a DuckDB, y luego los almacenas en Memcached para futuros accesos.
+Estrategia:
+Leer el archivo Parquet con DuckDB.
+Verificar si los datos están en Memcached.
+Si no están en Memcached, leer los datos desde el archivo Parquet y almacenarlos en Memcached.
+Devolver los datos ya sea desde Memcached o desde DuckDB si es necesario.
+Ejemplo de uso de Memcached con DuckDB al leer un archivo .parquet
+A continuación se muestra un ejemplo de cómo hacerlo en Go usando Memcached y DuckDB. El flujo es leer el archivo .parquet, almacenarlo en caché (Memcached), y si se vuelve a necesitar, recuperar los datos desde la caché.
+
+go
+Copiar código
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"sync"
+
+	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/duckdb/duckdb-go"
+)
+
+// Función para leer los datos desde el archivo Parquet o desde la caché
+func readParquetFromCacheOrFile(parquetFile string, mc *memcache.Client, wg *sync.WaitGroup) {
+	defer wg.Done() // Marcar la gorutina como completada
+
+	// Verificar si los datos están en caché
+	cacheKey := fmt.Sprintf("parquet_cache:%s", parquetFile)
+	item, err := mc.Get(cacheKey)
+	if err == nil {
+		// Si los datos están en la caché, deserializarlos
+		var cachedData []map[string]interface{}
+		if err := json.Unmarshal(item.Value, &cachedData); err != nil {
+			log.Fatalf("Error unmarshalling cached data: %v", err)
+		}
+		fmt.Println("Datos obtenidos de la caché.")
+		// Aquí podrías procesar los datos de alguna manera
+		return
+	}
+
+	// Si los datos no están en caché, leer desde el archivo Parquet con DuckDB
+	db, err := duckdb.Open(":memory:") // Conexión a DuckDB en memoria
+	if err != nil {
+		log.Fatalf("Error connecting to DuckDB: %v", err)
+	}
+	defer db.Close()
+
+	// Cargar el archivo Parquet en DuckDB
+	_, err = db.Exec(fmt.Sprintf("CREATE TABLE parquet_data AS SELECT * FROM read_parquet('%s');", parquetFile))
+	if err != nil {
+		log.Fatalf("Error reading Parquet file: %v", err)
+	}
+
+	// Leer los datos desde la tabla de DuckDB
+	rows, err := db.Query("SELECT * FROM parquet_data")
+	if err != nil {
+		log.Fatalf("Error executing query on DuckDB: %v", err)
+	}
+	defer rows.Close()
+
+	// Recuperar los resultados y almacenarlos en un mapa
+	var result []map[string]interface{}
+	columns, _ := rows.Columns()
+	for rows.Next() {
+		values := make([]interface{}, len(columns))
+		for i := range values {
+			values[i] = new(interface{})
+		}
+		if err := rows.Scan(values...); err != nil {
+			log.Fatalf("Error scanning row: %v", err)
+		}
+
+		rowData := make(map[string]interface{})
+		for i, col := range columns {
+			rowData[col] = *(values[i].(*interface{}))
+		}
+		result = append(result, rowData)
+	}
+
+	// Almacenar los datos en Memcached para futuras consultas
+	cacheData, err := json.Marshal(result)
+	if err != nil {
+		log.Fatalf("Error marshalling data to JSON: %v", err)
+	}
+	mc.Set(&memcache.Item{
+		Key:   cacheKey,
+		Value: cacheData,
+	})
+
+	// Ahora los datos están en la caché para futuras consultas
+	fmt.Println("Datos almacenados en la caché de Memcached.")
+}
+
+func main() {
+	// Conectar a Memcached
+	mc := memcache.New("localhost:11211") // Asegúrate de que Memcached esté corriendo
+
+	// Ruta del archivo Parquet
+	parquetFile := "path/to/your/file.parquet"
+
+	// Usamos un WaitGroup para manejar la concurrencia
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Leer los datos del archivo Parquet y almacenarlos en caché
+	go readParquetFromCacheOrFile(parquetFile, mc, &wg)
+
+	// Esperar a que la gorutina termine
+	wg.Wait()
+}
+Explicación:
+Memcached:
+
+Se usa para almacenar los resultados de las consultas. La clave de la caché se construye a partir del nombre del archivo Parquet (cacheKey).
+Si los datos ya están en la caché, se recuperan sin tener que leer el archivo .parquet nuevamente.
+DuckDB:
+
+Si los datos no están en la caché, se leen desde el archivo .parquet utilizando la función read_parquet de DuckDB.
+Los datos leídos se almacenan en memoria y luego se insertan en una tabla temporal de DuckDB.
+Concurrencia:
+
+Usamos una gorutina (go readParquetFromCacheOrFile) para leer y almacenar los datos de manera concurrente. Esto es útil si tienes múltiples archivos o si esperas que las consultas puedan ser ejecutadas en paralelo.
+Procesamiento de Datos:
+
+Los datos se almacenan en Memcached en formato JSON para ser reutilizados en futuras consultas.
+Esto evita tener que leer el archivo Parquet varias veces, lo cual puede ser costoso en términos de rendimiento.
+Ventajas del uso de Memcached en este caso:
+Reducción de tiempo de acceso: Si el archivo Parquet es grande o las consultas son frecuentes, tener los resultados en caché evitará la necesidad de leer el archivo Parquet repetidamente.
+Optimización de la memoria: Memcached almacena los datos en memoria, lo que permite un acceso muy rápido.
+Escalabilidad: Si tienes muchos archivos Parquet y muchas consultas, puedes usar Memcached para manejar grandes cantidades de datos de forma eficiente sin sobrecargar la base de datos o el sistema de archivos.
+Consideraciones:
+Tamaño de los datos: Memcached tiene un límite en cuanto al tamaño de los objetos que puede almacenar (por defecto, 1MB por item). Si los archivos Parquet son grandes, podrías necesitar dividir los datos en partes más pequeñas o usar otra solución de caché como Redis si los datos son muy grandes.
+Persistencia: Memcached no persiste los datos entre reinicios, por lo que si es necesario almacenar los datos permanentemente, puedes usar una base de datos o un sistema de almacenamiento de archivos adicional.
+Este enfoque debería ayudarte a mejorar la eficiencia al trabajar con archivos .parquet en situaciones donde las consultas a estos archivos sean frecuentes.
+
+
+
+
+
+
+
+
+
+############################################################### 
+##############################################################
+############################################################### Implementación en Golang: Ejemplo Aquí hay un ejemplo práctico:
+								Este enfoque minimiza el acceso al disco y optimiza el uso de memoria
+
+go
+Copiar código
+package main
+
+import (
+	"crypto/sha1"
+	"encoding/hex"
+	"fmt"
+	"log"
+
+	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/marcboeker/go-duckdb"
+)
+
+func main() {
+	// Conexión a Memcached
+	cache := memcache.New("localhost:11211")
+
+	// Conexión a DuckDB
+	conn, err := duckdb.Open("")
+	if err != nil {
+		log.Fatal("Error al conectar a DuckDB:", err)
+	}
+	defer conn.Close()
+
+	// Parámetros de la consulta
+	query := "SELECT * FROM read_parquet('users.parquet') WHERE id = 123"
+
+	// Generar un hash único para la consulta
+	hash := sha1.Sum([]byte(query))
+	cacheKey := hex.EncodeToString(hash[:])
+
+	// Verificar si el resultado está en caché
+	cachedResult, err := cache.Get(cacheKey)
+	if err == nil {
+		fmt.Println("Resultado desde caché:", string(cachedResult.Value))
+		return
+	}
+
+	// Ejecutar consulta en DuckDB
+	var result string
+	err = conn.QueryRow(query).Scan(&result)
+	if err != nil {
+		log.Fatal("Error al ejecutar consulta:", err)
+	}
+
+	// Almacenar el resultado en Memcached
+	err = cache.Set(&memcache.Item{
+		Key:   cacheKey,
+		Value: []byte(result),
+	})
+	if err != nil {
+		log.Fatal("Error al guardar en caché:", err)
+	}
+
+	fmt.Println("Resultado desde DuckDB:", result)
+}
+Conclusión
+Si privilegias concurrencia y las consultas son repetitivas, usar Memcached con consultas directas a DuckDB (read_parquet) es la mejor opción.
+ Este enfoque minimiza el acceso al disco y optimiza el uso de memoria.
+Si las consultas no son repetitivas y accedes constantemente a datos similares, usar tablas temporales puede ser más eficiente en memoria dentro de una sesión.
+Con este diseño, puedes manejar altos niveles de concurrencia mientras aprovechas las fortalezas de DuckDB y Memcached.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################################################### 
+##############################################################
+############################################################### servicio web en Golang utilizando DuckDB y Memcached para manejar consultas
+								 concurrentes a tres archivos .parquet y proporcionar datos para generar gráficos.
+							 Este enfoque es especialmente adecuado para datos históricos que se actualizan semanalmente, 
+									ya que puedes utilizar Memcached para optimizar consultas repetitivas y DuckDB
+							 para operaciones analíticas en los archivos .parquet.
+
+Diseño de la aplicación
+Arquitectura general:
+
+El servicio web será manejado por net/http en Golang.
+Las consultas a los archivos .parquet serán gestionadas por DuckDB.
+Memcached almacenará los resultados de consultas frecuentes.
+Concurrencia será manejada con goroutines y synchronization primitives.
+Flujo de operaciones:
+
+El cliente hace una solicitud (por ejemplo, para obtener datos para un gráfico específico).
+El servidor verifica Memcached para ver si los datos de la consulta ya están en caché.
+Si están en el caché, retorna los datos directamente.
+Si no están en el caché:
+Usa DuckDB para consultar los datos desde los archivos .parquet.
+Almacena los resultados en Memcached.
+Retorna los datos al cliente.
+Concurrencia:
+
+Manejar múltiples solicitudes al mismo tiempo usando goroutines para cada consulta.
+Usar locks o mecanismos de sincronización solo si se necesita coordinar operaciones compartidas.
+Implementación de un ejemplo en Golang
+go
+Copiar código
+package main
+
+import (
+	"crypto/sha1"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"sync"
+
+	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/marcboeker/go-duckdb"
+)
+
+var (
+	cache *memcache.Client
+	db    *duckdb.Conn
+	mu    sync.Mutex // Protege recursos compartidos si es necesario
+)
+
+func init() {
+	// Conexión a Memcached
+	cache = memcache.New("localhost:11211")
+
+	// Conexión a DuckDB
+	var err error
+	db, err = duckdb.Open("")
+	if err != nil {
+		log.Fatalf("Error al conectar a DuckDB: %v", err)
+	}
+}
+
+// Handler para manejar las solicitudes de gráficos
+func handleChartData(w http.ResponseWriter, r *http.Request) {
+	// Obtener parámetros de consulta
+	chartType := r.URL.Query().Get("chart")
+	filter := r.URL.Query().Get("filter") // Ejemplo: filtros como fechas o categorías
+
+	if chartType == "" {
+		http.Error(w, "Falta el parámetro 'chart'", http.StatusBadRequest)
+		return
+	}
+
+	// Generar consulta en base al gráfico solicitado
+	query := generateQuery(chartType, filter)
+
+	// Generar clave para el caché
+	hash := sha1.Sum([]byte(query))
+	cacheKey := hex.EncodeToString(hash[:])
+
+	// Verificar en Memcached
+	cachedResult, err := cache.Get(cacheKey)
+	if err == nil {
+		// Si está en caché, devolverlo
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(cachedResult.Value)
+		return
+	}
+
+	// Ejecutar consulta en DuckDB
+	rows, err := db.Query(query)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al ejecutar la consulta: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	// Leer resultados y convertirlos a JSON
+	var results []map[string]interface{}
+	columns, _ := rows.Columns()
+	for rows.Next() {
+		rowData := make([]interface{}, len(columns))
+		rowPointers := make([]interface{}, len(columns))
+		for i := range rowData {
+			rowPointers[i] = &rowData[i]
+		}
+		rows.Scan(rowPointers...)
+		rowMap := make(map[string]interface{})
+		for i, colName := range columns {
+			rowMap[colName] = rowData[i]
+		}
+		results = append(results, rowMap)
+	}
+
+	responseJSON, _ := json.Marshal(results)
+
+	// Almacenar el resultado en Memcached
+	cache.Set(&memcache.Item{
+		Key:   cacheKey,
+		Value: responseJSON,
+	})
+
+	// Devolver resultados
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(responseJSON)
+}
+
+// Genera la consulta SQL para DuckDB según el tipo de gráfico solicitado
+func generateQuery(chartType, filter string) string {
+	switch chartType {
+	case "user_growth":
+		return fmt.Sprintf("SELECT date, count(*) as user_count FROM read_parquet('users.parquet') WHERE date >= '%s' GROUP BY date ORDER BY date", filter)
+	case "sales":
+		return fmt.Sprintf("SELECT product, SUM(sales) as total_sales FROM read_parquet('sales.parquet') GROUP BY product ORDER BY total_sales DESC")
+	case "activity":
+		return fmt.Sprintf("SELECT user_id, activity, COUNT(*) as activity_count FROM read_parquet('activity.parquet') GROUP BY user_id, activity")
+	default:
+		return "SELECT 1"
+	}
+}
+
+func main() {
+	defer db.Close()
+
+	http.HandleFunc("/chart", handleChartData)
+
+	fmt.Println("Servidor escuchando en http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+Detalles del ejemplo
+Parámetros del endpoint:
+
+/chart?chart=user_growth&filter=2024-01-01: Solicita datos de crecimiento de usuarios desde una fecha específica.
+Conexión a DuckDB:
+
+Usa read_parquet para acceder directamente a los archivos Parquet.
+Uso de Memcached:
+
+Almacena resultados de consultas como JSON usando claves basadas en un hash de la consulta.
+Concurrencia:
+
+Cada solicitud al endpoint /chart se maneja de forma concurrente gracias al servidor HTTP de Go.
+Ventajas del enfoque
+Optimización de Memoria:
+
+DuckDB realiza consultas en los archivos Parquet sin cargar todos los datos en memoria.
+Memcached almacena resultados frecuentes, reduciendo la carga en DuckDB.
+Concurrencia:
+
+Go maneja solicitudes concurrentes de manera nativa con goroutines.
+El acceso concurrente a DuckDB y Memcached es eficiente y no bloqueante.
+Escalabilidad:
+
+Ideal para aplicaciones con múltiples usuarios y solicitudes simultáneas.
+Los datos históricos actualizados semanalmente permiten caché persistente entre actualizaciones.
+Extensiones posibles
+Manejo de caché:
+
+Implementar políticas de expiración en Memcached para datos más dinámicos.
+Monitorización:
+
+Agregar métricas para analizar cuántas solicitudes se satisfacen desde el caché frente a DuckDB.
+Autenticación y Seguridad:
+
+Implementar autenticación JWT si se requiere control de acceso al servicio web.
+Con este diseño, puedes manejar datos históricos de manera eficiente, optimizando tanto el acceso a los archivos Parquet como el manejo de consultas concurrentes.

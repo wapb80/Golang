@@ -1,0 +1,15 @@
+{{define "products"}}
+<h2>Productos</h2>
+<ul>
+    {{range .Products}}
+    <li>
+        {{.Name}} - ${{.Price}} (Disponible: {{.Quantity}})
+        {{if gt .Quantity 0}}
+        <button hx-post="/add-to-cart?id={{.ID}}" hx-target="#content1, #content2" hx-swap="innerHTML">Agregar al carrito</button>
+        {{else}}
+        <button disabled>No disponible</button>
+        {{end}}
+    </li>
+    {{end}}
+</ul>
+{{end}}

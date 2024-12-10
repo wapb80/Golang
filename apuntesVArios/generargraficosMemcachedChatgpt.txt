@@ -1,0 +1,193 @@
+Aquí tienes un ejemplo completo de una aplicación en Go que utiliza plantillas (html/template), HTMX para la interactividad, y Memcached para mejorar el rendimiento tanto en la generación de HTML como en las consultas de PostgreSQL. Este ejemplo incluye un menú lateral, un área para cargar gráficos, y simulación de consultas a PostgreSQL:
+
+Estructura del Proyecto
+plaintext
+Copiar código
+project/
+├── templates/
+│   ├── index.html        # Página principal con el menú y la etiqueta div para gráficos
+│   ├── chart.html        # Plantilla base para gráficos
+├── main.go               # Código principal
+Código de main.go
+go
+Copiar código
+package main
+
+import (
+	"bytes"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"html/template"
+	"io"
+	"net/http"
+	"os"
+
+	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/opts"
+	_ "github.com/lib/pq"
+)
+
+var (
+	tmpl    = template.Must(template.ParseGlob("templates/*.html"))
+	mc      = memcache.New("127.0.0.1:11211")
+	db      *sql.DB
+	dbError error
+)
+
+// Inicializar la conexión a PostgreSQL
+func init() {
+	connStr := "postgres://user:password@localhost:5432/dbname?sslmode=disable"
+	db, dbError = sql.Open("postgres", connStr)
+	if dbError != nil {
+		fmt.Println("Error conectando a la base de datos:", dbError)
+		os.Exit(1)
+	}
+}
+
+// Estructura para representar datos simulados
+type DataPoint struct {
+	Label string
+	Value int
+}
+
+// Cargar la página principal
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl.ExecuteTemplate(w, "index.html", nil)
+}
+
+// Generar los datos del gráfico con Memcached
+func fetchData(sexo, nacionalidad string) ([]DataPoint, error) {
+	cacheKey := fmt.Sprintf("data_%s_%s", sexo, nacionalidad)
+	item, err := mc.Get(cacheKey)
+	if err == nil {
+		// Si está en Memcached, devolver los datos
+		var data []DataPoint
+		json.Unmarshal(item.Value, &data)
+		return data, nil
+	}
+
+	// Simulación de consulta a PostgreSQL
+	query := "SELECT label, value FROM example_table WHERE sexo=$1 AND nacionalidad=$2"
+	rows, err := db.Query(query, sexo, nacionalidad)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	data := []DataPoint{}
+	for rows.Next() {
+		var dp DataPoint
+		if err := rows.Scan(&dp.Label, &dp.Value); err != nil {
+			return nil, err
+		}
+		data = append(data, dp)
+	}
+
+	// Guardar en Memcached
+	jsonData, _ := json.Marshal(data)
+	mc.Set(&memcache.Item{Key: cacheKey, Value: jsonData})
+
+	return data, nil
+}
+
+// Generar el gráfico y devolver el HTML
+func generateChart(sexo, nacionalidad string) (string, error) {
+	cacheKey := fmt.Sprintf("chart_%s_%s", sexo, nacionalidad)
+	item, err := mc.Get(cacheKey)
+	if err == nil {
+		return string(item.Value), nil
+	}
+
+	// Crear gráfico con Go-ECharts
+	data, err := fetchData(sexo, nacionalidad)
+	if err != nil {
+		return "", err
+	}
+	bar := charts.NewBar()
+	bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: "Ejemplo de Gráfico"}))
+	bar.SetXAxis([]string{}).AddSeries("Datos", func() []opts.BarData {
+		bd := []opts.BarData{}
+		for _, d := range data {
+			bd = append(bd, opts.BarData{Value: d.Value, Name: d.Label})
+		}
+		return bd
+	}())
+
+	var buf bytes.Buffer
+	err = bar.Render(&buf)
+	if err != nil {
+		return "", err
+	}
+
+	chartHTML := buf.String()
+	mc.Set(&memcache.Item{Key: cacheKey, Value: []byte(chartHTML)})
+
+	return chartHTML, nil
+}
+
+// Manejar las solicitudes de generación de gráficos
+func chartHandler(w http.ResponseWriter, r *http.Request) {
+	sexo := r.URL.Query().Get("sexo")
+	nacionalidad := r.URL.Query().Get("nacionalidad")
+
+	chartHTML, err := generateChart(sexo, nacionalidad)
+	if err != nil {
+		http.Error(w, "Error generando gráfico", http.StatusInternalServerError)
+		return
+	}
+
+	tmpl.ExecuteTemplate(w, "chart.html", template.HTML(chartHTML))
+}
+
+func main() {
+	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/chart", chartHandler)
+	fmt.Println("Servidor corriendo en http://localhost:8080")
+	http.ListenAndServe(":8080", nil)
+}
+Plantilla index.html
+html
+Copiar código
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráficos con Go y HTMX</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+</head>
+<body>
+    <div style="display: flex;">
+        <aside style="width: 20%; background: #f0f0f0; padding: 10px;">
+            <h3>Menú</h3>
+            <form hx-get="/chart" hx-target="#contenidoHtml">
+                <label for="sexo">Sexo:</label>
+                <select name="sexo" id="sexo">
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                </select>
+                <label for="nacionalidad">Nacionalidad:</label>
+                <select name="nacionalidad" id="nacionalidad">
+                    <option value="chile">Chile</option>
+                    <option value="argentina">Argentina</option>
+                </select>
+                <button type="submit">Generar Gráfico</button>
+            </form>
+        </aside>
+        <main style="width: 80%; padding: 10px;">
+            <div id="contenidoHtml">Selecciona una opción para cargar el gráfico aquí.</div>
+        </main>
+    </div>
+</body>
+</html>
+Plantilla chart.html
+html
+Copiar código
+{{.}}
+Notas
+Memcached: Utiliza Memcached para almacenar tanto los datos como el HTML generado de los gráficos.
+Go-ECharts: Genera los gráficos dinámicamente con Go-ECharts.
+PostgreSQL: Consulta los datos con filtros y utiliza Memcached para optimizar.
+HTMX: Maneja las interacciones del formulario y carga dinámicamente los gráficos en el <div id="contenidoHtml">.

@@ -1,0 +1,188 @@
+Código Mejorado con PostgreSQL
+Paso 1: Configurar PostgreSQL
+Supongamos que tienes una tabla demographics con esta estructura:
+
+sql
+Copiar código
+CREATE TABLE demographics (
+    id SERIAL PRIMARY KEY,
+    age_group VARCHAR(50),
+    gender VARCHAR(50),
+    nationality VARCHAR(50),
+    value INTEGER
+);
+Ejemplo de datos:
+
+sql
+Copiar código
+INSERT INTO demographics (age_group, gender, nationality, value)
+VALUES
+('18-25', 'masculino', 'chileno', 100),
+('26-35', 'femenino', 'chileno', 80),
+('36-45', 'masculino', 'extranjero', 50),
+('46+', 'femenino', 'extranjero', 30);
+Paso 2: Conectar Go a PostgreSQL
+Instala la biblioteca pgx:
+
+bash
+Copiar código
+go get github.com/jackc/pgx/v5
+Código Completo
+go
+Copiar código
+package main
+
+import (
+	"context"
+	"fmt"
+	"github.com/go-charts/charts"
+	"github.com/jackc/pgx/v5"
+	"html/template"
+	"log"
+	"net/http"
+	"sync"
+)
+
+var (
+	templates = template.Must(template.ParseFiles("templates/index.html", "templates/graph.html"))
+	db        *pgx.Conn
+)
+
+func main() {
+	var err error
+	db, err = pgx.Connect(context.Background(), "postgres://username:password@localhost:5432/dbname")
+	if err != nil {
+		log.Fatalf("Unable to connect to database: %v\n", err)
+	}
+	defer db.Close(context.Background())
+
+	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/generate-charts", generateChartsHandler)
+
+	fmt.Println("Server running at http://localhost:8080")
+	http.ListenAndServe(":8080", nil)
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	templates.ExecuteTemplate(w, "index.html", nil)
+}
+
+func generateChartsHandler(w http.ResponseWriter, r *http.Request) {
+	// Obtener parámetros de la URL
+	age := r.URL.Query().Get("age")
+	gender := r.URL.Query().Get("gender")
+	nationality := r.URL.Query().Get("nationality")
+
+	// Mostrar los parámetros recibidos (opcional)
+	fmt.Printf("Edad: %s, Género: %s, Nacionalidad: %s\n", age, gender, nationality)
+
+	// Usamos gorutinas para generar los gráficos
+	var wg sync.WaitGroup
+	chartsHtml := ""
+
+	// Llamar a las funciones de gráficos con los parámetros
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		data := fetchChartData("bar", age, gender, nationality)
+		chartsHtml += "<div>" + generateBarChart(data) + "</div>"
+	}()
+	go func() {
+		defer wg.Done()
+		data := fetchChartData("line", age, gender, nationality)
+		chartsHtml += "<div>" + generateLineChart(data) + "</div>"
+	}()
+	go func() {
+		defer wg.Done()
+		data := fetchChartData("pie", age, gender, nationality)
+		chartsHtml += "<div>" + generatePieChart(data) + "</div>"
+	}()
+
+	// Esperar a que todas las gorutinas terminen
+	wg.Wait()
+
+	templates.ExecuteTemplate(w, "graph.html", chartsHtml)
+}
+
+// fetchChartData consulta PostgreSQL para obtener los datos necesarios para los gráficos
+func fetchChartData(chartType, age, gender, nationality string) []int {
+	query := `
+        SELECT value
+        FROM demographics
+        WHERE age_group = $1 AND gender = $2 AND nationality = $3
+    `
+	rows, err := db.Query(context.Background(), query, age, gender, nationality)
+	if err != nil {
+		log.Printf("Error querying database: %v\n", err)
+		return nil
+	}
+	defer rows.Close()
+
+	var data []int
+	for rows.Next() {
+		var value int
+		if err := rows.Scan(&value); err != nil {
+			log.Printf("Error scanning row: %v\n", err)
+			continue
+		}
+		data = append(data, value)
+	}
+	return data
+}
+
+// generateBarChart genera un gráfico de barras
+func generateBarChart(data []int) string {
+	chart := charts.NewChart()
+	chart.AddData("Barras", data)
+	return chart.RenderHTML()
+}
+
+// generateLineChart genera un gráfico de líneas
+func generateLineChart(data []int) string {
+	chart := charts.NewChart()
+	chart.AddData("Líneas", data)
+	return chart.RenderHTML()
+}
+
+// generatePieChart genera un gráfico de pastel
+func generatePieChart(data []int) string {
+	chart := charts.NewChart()
+	chart.AddData("Pie", data)
+	return chart.RenderHTML()
+}
+Explicación
+Conexión a PostgreSQL:
+
+Usamos pgx.Connect para conectarnos a la base de datos PostgreSQL. Reemplaza username, password, y dbname con los valores reales de tu configuración.
+Consulta dinámica:
+
+La función fetchChartData toma los parámetros seleccionados (age, gender, nationality) y realiza una consulta SQL para recuperar los datos relevantes.
+Generación de gráficos concurrente:
+
+Cada tipo de gráfico (bar, line, pie) se genera en una gorutina separada.
+Los datos recuperados de PostgreSQL se pasan a las funciones de generación de gráficos (generateBarChart, etc.).
+Renderizado en el frontend:
+
+Los gráficos se combinan en un bloque HTML que se envía al iframe.
+Paso 3: Modificar graph.html
+html
+Copiar código
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gráficos Generados</title>
+</head>
+<body>
+    {{.}}
+</body>
+</html>
+Resultado
+Cuando se seleccionan los parámetros en el formulario y se presiona "Generar Gráficos", el servidor consulta PostgreSQL para obtener los datos relevantes.
+Los gráficos (barras, líneas, pastel) se generan concurrentemente usando gorutinas.
+Los gráficos se renderizan dentro del único iframe.
+
+
+
+
+

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validación de RUT Chileno</title>
+</head>
+<body>
+    <h2>Ingrese su RUT</h2>
+    <input type="text" id="rut" placeholder="11.111.111-1" oninput="formatearRUT()" onkeypress="validarEnter(event)">
+    <p id="resultado"></p>
+
+    <script>
+        
+        // Función para dar formato a medida que se escribe el RUT
+        function formatearRUT() {
+            const rutInput = document.getElementById("rut");
+            let rut = rutInput.value.replace(/\./g, '').replace(/-/g, ''); // Eliminar puntos y guión
+
+            if (rut.length > 1) {
+                rut = rut.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "-" + rut.slice(-1); // Formato 11.111.111-1
+            }
+            
+            rutInput.value = rut;
+        }
+
+        // Función para capturar el "Enter" y validar el dígito verificador
+        function validarEnter(event) {
+            if (event.key === "Enter") {
+                const rutInput = document.getElementById("rut").value;
+                const [numero, digitoVerificador] = rutInput.split('-');
+
+                // Validar sólo si el número y el dígito verificador están presentes
+                if (numero && digitoVerificador) {
+                    if (validarRUT(numero.replace(/\./g, ""), digitoVerificador.toUpperCase())) {
+                        document.getElementById("resultado").innerText = "RUT válido";
+                    } else {
+                        document.getElementById("resultado").innerText = "RUT inválido";
+                    }
+                } else {
+                    document.getElementById("resultado").innerText = "RUT incompleto";
+                }
+            }
+        }
+
+        // Función para validar el dígito verificador
+        function validarRUT(numero, digitoVerificador) {
+            let suma = 0;
+            let multiplicador = 2;
+
+            // Invertir los dígitos del RUT y recorrerlos
+            for (let i = numero.length - 1; i >= 0; i--) {
+                suma += parseInt(numero[i]) * multiplicador;
+                multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+            }
+
+            const resto = suma % 11;
+            const dvCalculado = 11 - resto;
+
+            // Condiciones para determinar el dígito verificador
+            if (dvCalculado === 10) return digitoVerificador === 'K';
+            if (dvCalculado === 11) return digitoVerificador === '0';
+
+            return digitoVerificador === dvCalculado.toString();
+        }
+    </script>
+</body>
+</html>

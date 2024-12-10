@@ -1,0 +1,112 @@
+
+mkdir mi-proyecto
+cd mi-proyecto
+go mod init mi-proyecto
+
+*****************************************************
+
+Cuando hace referencia a campos a través de .dentro de un rango, se espera que sea un campo en el elemento que se está agrupando, por lo que en este caso
+
+{{range .UserNames}}
+{{$check := .Checks}}
+Busca un campo de comprobaciones en la instancia actual en la lista de nombres de usuario. 
+Si las comprobaciones son independientes de eso (como aparece en sus PageVars),
+puede usar la $referencia al objeto de nivel superior, por ejemplo
+
+{{range .UserNames}}
+{{$check := $.Checks}} 
+
+
+--pasndo una variable desde main
+
+<option value="{{ .Nombre }}" {{ if eq .Nombre $.SelectComuna }} selected {{ end }}>{{ .Nombre }}</option>
+
+
+-- rescatando el valor del array jugadores en una variable 
+    {{ range .Jugadores }}
+                <!-- Guarda el jugador actual en una variable -->
+            {{$jugador := .}}
+
+
+<option value="{{ .Nombre }}" {{ if eq .Nombre $jugador.Comuna }} selected {{ end }}>{{ .Nombre }}</option>
+
+---- pasando la consulta directa del select sin pasar por un array 
+<option value="{{ .Nombre }}" {{ if eq .Nombre $.Jugadores.Comuna }}selected{{end}}>{{ .Nombre }}</option>
+
+
+
+
+
+
+
+
+
+
+-----------
+Parece que la validación y flujo están bastante completos, pero aún puede haber ajustes o mejoras necesarias para garantizar que todos los componentes funcionen correctamente. A continuación, algunas recomendaciones:
+
+1. Validaciones del lado del servidor
+Aunque las validaciones de JavaScript son útiles, asegúrate de repetirlas en el servidor. Por ejemplo:
+
+Verificar que la fecha de nacimiento coincida con la edad.
+Comprobar el formato del correo.
+Validar la existencia y tamaño del archivo de foto si se envía.
+Esto asegura que usuarios malintencionados no puedan omitir las validaciones de cliente.
+
+2. Corrección del campo "RUT" en el backend
+En el servidor, parece que no estás capturando correctamente el valor de rut2 (visible en el HTML como id="rut2"). Revisa si este valor es correctamente enviado al servidor y utilizado para construir el nombre de la foto. Además, asegúrate de que sea único para evitar conflictos de nombres.
+
+Por ejemplo:
+
+go
+Copiar código
+rut := r.FormValue("rut2")
+if rut == "" {
+    http.Error(w, "RUT no válido", http.StatusBadRequest)
+    return
+}
+3. Subida y guardado de imágenes
+El fragmento en el que guardas la foto está bien estructurado, pero considera estos puntos:
+
+Evita nombres repetidos: Aunque usas rut2 + fecha, podrías añadir más aleatoriedad con un UUID.
+Seguridad de rutas: Asegúrate de validar el contenido del archivo antes de guardarlo para evitar archivos maliciosos.
+Extensión del archivo: Aunque lo guardas como .jpg, sería mejor detectar y conservar la extensión original.
+Ejemplo:
+
+go
+Copiar código
+fileHeader, err := fileHeader.Open()
+if err != nil {
+    http.Error(w, "Error al abrir archivo", http.StatusInternalServerError)
+    return
+}
+// Validar extensión
+fileExt := filepath.Ext(fileHeader.Filename)
+if fileExt != ".jpg" && fileExt != ".jpeg" && fileExt != ".png" {
+    http.Error(w, "Formato de imagen no permitido", http.StatusBadRequest)
+    return
+}
+nombreFoto := fmt.Sprintf("%s_%s%s", rut, formattedDateTime, fileExt)
+
+
+
+**********************************************************************ejecutar 
+
+go build -o mi_programa.exe main.go database.go
+
+
+go build -o futbol 
+
+Si deseas optimizar el tamaño del binario, puedes usar el flag -ldflags al compilar. Por ejemplo, para eliminar información de depuración:
+
+bash
+
+
+go build -ldflags="-s -w" -o mi_programa2.exe main.go database.go
+
+-s: Elimina la información de la tabla de símbolos.
+-w: Elimina la información de la tabla de depuración.
+
+
+
+

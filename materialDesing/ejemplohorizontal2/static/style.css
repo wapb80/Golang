@@ -1,0 +1,30 @@
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  
+  .nav-wrapper {
+    padding: 0 15px;
+  }
+  
+  .submenu {
+    padding: 10px 0;
+  }
+  
+  .sidebar {
+    padding: 10px;
+  }
+  
+  .content {
+    padding: 20px;
+  }
+  
+  select {
+    font-size: 0.9rem;
+  }
+  
+  .collection-item select {
+    margin: 5px 0;
+  }
+  

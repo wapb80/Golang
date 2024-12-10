@@ -1,0 +1,42 @@
+package main
+
+import (
+	"html/template"
+	"log"
+	"net/http"
+)
+
+var tmpl = template.Must(template.ParseGlob("templates/*.html"))
+
+func renderTemplate(w http.ResponseWriter, tmplName string, data interface{}) {
+	err := tmpl.ExecuteTemplate(w, tmplName, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func main() {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		renderTemplate(w, "base.html", map[string]interface{}{
+			"Title": "Bienvenida",
+		})
+	})
+
+	http.HandleFunc("/menu/reportes", func(w http.ResponseWriter, r *http.Request) {
+		// Genera datos dinámicos para 20 selects
+		menuData := []map[string]interface{}{
+			{"Label": "Selector del Panel", "Options": []string{"Caracterización", "Salud", "Necesidades Especiales", "Familia", "Situación SocioEconomica", "Contexto Familiar y Social", "Caracteristicas Del Estudiante", "Estilo de Vida", "Crianza", "Educacion, estimulación apoyo Parvularia", "Seguridad Alimentaria"}},
+			{"Label": "Periodo Año", "Options": []string{"Todos", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023"}},
+			{"Label": "Encuesta", "Options": []string{"Parvularia", "1° Básico", "5° Basico", "1° Medio"}},
+			{"Label": "Región", "Options": []string{"Todas", "Arica y Parinacota", "Tarapacá", "Antofagasta", "Coquimbo", "Valparaíso", "Metropolitana", "Lib. Gral. Bernardo O'Higgins", "Maule", "Ñuble", "BioBío", "La Araucanía", "Los Ríos", "Los Lagos", "Aysen", "Magallanes"}},
+			{"Label": "Comida Favorita", "Options": []string{"Pizza", "Empanadas", "Ceviche", "Tacos"}},
+		}
+
+		renderTemplate(w, "menu_reportes.html", map[string]interface{}{
+			"Options": menuData,
+		})
+	})
+
+	log.Println("Servidor iniciado en http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}

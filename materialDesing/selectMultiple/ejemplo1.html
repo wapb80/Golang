@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filtros Profesionales</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="container my-4">
+    <!-- Botón para abrir filtros -->
+    <div class="text-end">
+        <button class="btn btn-primary" id="openFiltersBtn">
+            <i class="bi bi-funnel"></i> Abrir Filtros
+        </button>
+    </div>
+
+    <!-- Encabezado de filtros -->
+    <div class="card mt-3 d-none" id="filtersCard">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Filtros</h5>
+            <div>
+                <button class="btn btn-outline-danger btn-sm me-2" id="clearFiltersBtn">
+                    <i class="bi bi-x-circle"></i> Borrar Filtros
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" id="closeFiltersBtn">
+                    <i class="bi bi-x-lg"></i> Cerrar
+                </button>
+            </div>
+        </div>
+        <!-- Formulario de filtros -->
+        <div class="card-body">
+            <form id="filtersForm">
+                <div class="row g-3">
+                    <!-- Categorías -->
+                    <div class="col-md-4">
+                        <label class="form-label">Categorías:</label>
+                        <select class="form-select" name="category">
+                            <option value="">Selecciona</option>
+                            <option value="electronics">Electrónica</option>
+                            <option value="clothing">Ropa</option>
+                            <option value="books">Libros</option>
+                        </select>
+                    </div>
+                    <!-- Rango de precios -->
+                    <div class="col-md-4">
+                        <label class="form-label">Rango de Precio:</label>
+                        <input type="number" class="form-control" name="minPrice" placeholder="Precio Mínimo">
+                        <input type="number" class="form-control mt-2" name="maxPrice" placeholder="Precio Máximo">
+                    </div>
+                    <!-- Palabra clave -->
+                    <div class="col-md-4">
+                        <label class="form-label">Palabra Clave:</label>
+                        <input type="text" class="form-control" name="keyword" placeholder="Buscar...">
+                    </div>
+                </div>
+                <div class="text-end mt-3">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Aplicar Filtros
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="mt-4">
+        <h5>Resultados:</h5>
+        <div id="results" class="alert alert-secondary">No hay resultados. Aplica algún filtro.</div>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle (incluye Popper) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Iconos de Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+<script>
+    const openFiltersBtn = document.getElementById('openFiltersBtn');
+    const filtersCard = document.getElementById('filtersCard');
+    const closeFiltersBtn = document.getElementById('closeFiltersBtn');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    const filtersForm = document.getElementById('filtersForm');
+    const resultsDiv = document.getElementById('results');
+
+    // Mostrar los filtros
+    openFiltersBtn.addEventListener('click', () => {
+        filtersCard.classList.remove('d-none');
+        openFiltersBtn.classList.add('d-none');
+    });
+
+    // Ocultar los filtros
+    closeFiltersBtn.addEventListener('click', () => {
+        filtersCard.classList.add('d-none');
+        openFiltersBtn.classList.remove('d-none');
+    });
+
+    // Limpiar los filtros
+    clearFiltersBtn.addEventListener('click', () => {
+        filtersForm.reset();
+        resultsDiv.textContent = "No hay resultados. Aplica algún filtro.";
+        resultsDiv.className = "alert alert-secondary";
+    });
+
+    // Aplicar los filtros
+    filtersForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(filtersForm);
+        const filters = {};
+        formData.forEach((value, key) => {
+            if (value) filters[key] = value;
+        });
+
+        // Mostrar resultados ficticios
+        if (Object.keys(filters).length > 0) {
+            resultsDiv.textContent = `Filtros aplicados: ${JSON.stringify(filters, null, 2)}`;
+            resultsDiv.className = "alert alert-success";
+        } else {
+            resultsDiv.textContent = "No hay resultados. Aplica algún filtro.";
+            resultsDiv.className = "alert alert-secondary";
+        }
+    });
+</script>
+
+</body>
+</html>

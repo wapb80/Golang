@@ -1,0 +1,14 @@
+<div>
+  <h5>Opciones de Reportes</h5>
+  {{range .Options}}
+  <div class="menu-item">
+    <label>{{.Label}}</label>
+    <select>
+      <option value="" disabled selected>Seleccione una opción</option>
+      {{range .Options}}
+      <option value="{{.}}">{{.}}</option>
+      {{end}}
+    </select>
+  </div>
+  {{end}}
+</div>

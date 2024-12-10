@@ -1,0 +1,11 @@
+<div class="mdc-drawer__content">
+  {{ if eq . "bienvenida" }}
+      <button hx-get="/contenido?contenido=bienvenida" hx-target="#content">Introducción</button>
+  {{ else if eq . "reportes" }}
+      <button hx-get="/contenido?contenido=reportes" hx-target="#content">Reportes Mensuales</button>
+  {{ else if eq . "comparativas" }}
+      <button hx-get="/contenido?contenido=comparativas" hx-target="#content">Comparativas Anuales</button>
+  {{ else if eq . "georreferenciacion" }}
+      <button hx-get="/contenido?contenido=georreferenciacion" hx-target="#content">Mapas</button>
+  {{ end }}
+</div>

@@ -1,0 +1,16 @@
+<div>
+  <h5>Opciones de Reportes</h5>
+  <form>
+    {{range .Options}}
+    <div class="input-field">
+      <select>
+        <option value="" disabled selected>Seleccione una opción</option>
+        {{range .Values}}
+        <option value="{{.}}">{{.}}</option>
+        {{end}}
+      </select>
+      <label>{{.Label}}</label>
+    </div>
+    {{end}}
+  </form>
+</div>

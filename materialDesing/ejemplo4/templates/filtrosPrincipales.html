@@ -1,0 +1,279 @@
+<div class="container my-4">
+  
+    <!-- Botón para mostrar los filtros -->
+    <button id="showFiltersBtn" class="btn btn-primary mb-3">Mostrar Filtros</button>
+
+    <div class="card" id="filtersCard" class="hidden">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Filtros</h5>
+            <button class="btn btn-outline-secondary btn-sm" id="closeFiltersBtn">Cerrar</button>
+        </div>
+        <div class="card-body">
+          <form id="filtersForm">
+            <div class="row g-3">
+                <!-- Filtro : Sexo -->
+                <div class="col-md-4">
+                  <label class="form-label">Sexo:</label>
+                    <div class="position-relative custom-select" id="Sexo">
+                        <span id="selectedTextSexo">Seleccionar Sexo</span>
+                        <div class="options-container">
+                            <!-- <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="todo" id="sexoTodo">
+                                <label class="form-check-label" for="sexoTodo">Todo</label>
+                            </div> -->
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Hombre" id="sexoH">
+                                <label class="form-check-label" for="sexoH">Hombre</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Mujer" id="sexoM">
+                                <label class="form-check-label" for="sexoM">Mujer</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtro : Pueblos Originarios -->
+                <div class="col-md-4">
+                  <label class="form-label">Pueblos Originarios:</label>
+                    <div class="position-relative custom-select" id="Pueblos Originarios">
+                        <span id="selectedTextpueblosOriginarios">Seleccionar Pueblos Originarios</span>
+                        <div class="options-container">
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Pertenece" id="puebloPertenece">
+                                <label class="form-check-label" for="puebloPertenece">Pertenece</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="No Pertenece" id="puebloNoPertenece">
+                                <label class="form-check-label" for="puebloNoPertenece">No Pertenece</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="No Sabe" id="noSabe">
+                                <label class="form-check-label" for="noSabe">No Sabe</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtro : Nacionalidad -->
+                <div class="col-md-4">
+                  <label class="form-label">Nacionalidad:</label>
+                    <div class="position-relative custom-select" id="Nacionalidad">
+                        <span id="selectedTextNacionalidad">Seleccionar Nacionalidad</span>
+                        <div class="options-container">
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Chilena" id="chilena">
+                                <label class="form-check-label" for="chilena">Chilena</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Extranjera" id="extranjera">
+                                <label class="form-check-label" for="extranjera">Extranjera</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>                
+            <div class="row g-3">
+                <!-- Filtro : Zona GEografica -->
+                <div class="col-md-4">
+                  <label class="form-label">Zona Geográfica:</label>
+                    <div class="position-relative custom-select" id="Zona Geografica">
+                        <span id="selectedTextZonaGeografica">Seleccionar Zona Geográfica</span>
+                        <div class="options-container">
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Urbana" id="urbana">
+                                <label class="form-check-label" for="urbana">Urbana</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Rural" id="rural">
+                                <label class="form-check-label" for="rural">Casado</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+
+                
+                <!-- Filtro : Dependencia -->
+                <div class="col-md-4">
+                  <label class="form-label">Dependencia:</label>
+                    <div class="position-relative custom-select" id="Dependencia">
+                        <span id="selectedTextDependencia">Seleccionar Dependencia</span>
+                        <div class="options-container">
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="DAEM" id="daem">
+                                <label class="form-check-label" for="daem">Municipalidad DAEM</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Corporacion Municipal" id="cmunicipal">
+                                <label class="form-check-label" for="cmunicipal">Corporación Municipal</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="SLEP" id="slep">
+                              <label class="form-check-label" for="slep">Servicio Local de Educación Pública (SLEP)</label>
+                          </div>
+                          <div class="form-check">
+                            <input class="form-check-input category-checkbox" type="checkbox" value="Administración Delejada" id="addelejada">
+                            <label class="form-check-label" for="addelejada">Administración Delejada</label>
+                        </div>                                                          
+                        <div class="form-check">
+                          <input class="form-check-input category-checkbox" type="checkbox" value="Particular Subencionado" id="psubencionado">
+                          <label class="form-check-label" for="psubencionado">Particular Subencionado</label>
+                      </div>                              
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtro : IVM -->
+                    <div class="col-md-4">
+                      <label class="form-label">I.V.M.:</label>
+                        <div class="position-relative custom-select" id="Ivm">
+                            <span id="selectedTextIvm">Seleccionar IVM</span>
+                            <div class="options-container">
+                                <div class="form-check">
+                                    <input class="form-check-input category-checkbox" type="checkbox" value="Muy Alto" id="ivmma">
+                                    <label class="form-check-label" for="ivmma">Muy Alto</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input category-checkbox" type="checkbox" value="Alto" id="ivma">
+                                    <label class="form-check-label" for="ivma">Alto</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input category-checkbox" type="checkbox" value="Medio" id="ivmm">
+                                    <label class="form-check-label" for="ivmm">Medio</label>
+                                </div>
+                                <div class="form-check">
+                                  <input class="form-check-input category-checkbox" type="checkbox" value="Bajo" id="ivmb">
+                                  <label class="form-check-label" for="ivmb">Bajo</label>
+                              </div>                                  
+                            </div>
+                        </div>
+                    </div>
+            </div>
+
+            
+            <div class="row g-3">
+              <div class="col-md-4">
+                <!-- Filtro :  Estado Nutricional -->
+                <label class="form-label">Estado Nutricional:</label>
+                <div class="position-relative custom-select" id="Estado Nutricional">
+                    <span id="selectedTextEstadoNutricional">Seleccionar Estado Nutricional</span>
+                    <div class="options-container">
+                        <div class="form-check">
+                            <input class="form-check-input category-checkbox" type="checkbox" value="Obesidad Severa" id="os">
+                            <label class="form-check-label" for="os">Obesidad Severa</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input category-checkbox" type="checkbox" value="Obesidad" id="o">
+                            <label class="form-check-label" for="o">Obesidad</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input category-checkbox" type="checkbox" value="Sobrepeso" id="sp">
+                          <label class="form-check-label" for="sp">Sobrepeso</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input category-checkbox" type="checkbox" value="Normal" id="no">
+                        <label class="form-check-label" for="no">Normal</label>
+                    </div>  
+                    <div class="form-check">
+                      <input class="form-check-input category-checkbox" type="checkbox" value="Riesgo Desnutricion" id="rd">
+                      <label class="form-check-label" for="rd">Riesgo Desnutrición</label>
+                  </div>   
+                  <div class="form-check">
+                    <input class="form-check-input category-checkbox" type="checkbox" value="Desnutricion" id="d">
+                    <label class="form-check-label" for="d">Desnutrición</label>
+                </div>                                                                                                   
+                    </div>
+                </div>
+            </div>
+            
+
+            
+            <!-- Filtro : Retrazo en talla -->
+            <div class="col-md-4">
+              <label class="form-label">Retraso en Talla:</label>
+                <div class="position-relative custom-select" id="Talla">
+                    <span id="selectedTextTalla">Seleccionar Talla</span>
+                    <div class="options-container">
+                        <div class="form-check">
+                            <input class="form-check-input category-checkbox" type="checkbox" value="Si" id="tallasi">
+                            <label class="form-check-label" for="tallasi">Si</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input category-checkbox" type="checkbox" value="No" id="tallano">
+                            <label class="form-check-label" for="tallano">No</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                <!-- Filtro 6: Discapacidad -->
+                <div class="col-md-4">
+                  <label class="form-label">Discapacidad:</label>
+                    <div class="position-relative custom-select" id="Discapacidad">
+                        <span id="selectedTextDiscapacidad">Seleccionar Discapacidad</span>
+                        <div class="options-container">
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Sin Discapacidad" id="sd">
+                                <label class="form-check-label" for="sd">Sin Discapacidad</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Leve" id="ld">
+                                <label class="form-check-label" for="ld">Leve</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input category-checkbox" type="checkbox" value="Moderada" id="md">
+                                <label class="form-check-label" for="md">Moderada</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="Severa" id="ds">
+                              <label class="form-check-label" for="ds">Severa</label>
+                          </div>                                  
+                        </div>
+                    </div>
+                </div>
+          </div>
+
+
+          <div class="row g-3">
+          <!-- Filtro : Grupos Vulnerables -->
+              <div class="col-md-4">
+                <label class="form-label">Grupos Vulnerables:</label>
+                  <div class="position-relative custom-select"  id="Grupos Vulnerables">
+                      <span id="selectedTextGruposVulnerables">Seleccionar Grupos Vulnerables</span>
+                      <div class="options-container">
+                          <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="Sin Figura Paterna" id="gsfp">
+                              <label class="form-check-label" for="gsfp">Sin Figura Paterna</label>
+                          </div>
+                          <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="Padres Extranjeros" id="gpe">
+                              <label class="form-check-label" for="gpe">Padres Extranjeros</label>
+                          </div>
+                          <div class="form-check">
+                              <input class="form-check-input category-checkbox" type="checkbox" value="Dificultades de Salud" id="gds">
+                              <label class="form-check-label" for="gds">Dificultades de Salud</label>
+                          </div>
+                          <div class="form-check">
+                            <input class="form-check-input category-checkbox" type="checkbox" value="Madre Jefa de Hogar" id="gmjh">
+                            <label class="form-check-label" for="gmjh">Madre Jefa de Hogar</label>
+                        </div>                                  
+                      </div>
+                  </div>
+              </div>
+        </div>
+
+            <div class="text-end mt-3" id="botonFiltros">
+               
+            </div>
+        </form>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="mt-4">
+        <h5>Resultados:</h5>
+        <div id="results" class="alert alert-secondary">No hay resultados. Aplica algún filtro.</div>
+    </div>
+</div>
+

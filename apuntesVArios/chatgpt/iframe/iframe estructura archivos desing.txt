@@ -1,0 +1,210 @@
+Para implementar un sistema como el que describes, utilizando Material Design y plantillas HTML en Go, propongo organizar el proyecto para mantener una estructura modular y reutilizable. A continuación, detallo la estructura de archivos y el código necesario para implementar el sistema.
+
+Estructura de Archivos
+go
+Copiar código
+project/
+├── main.go
+├── handlers/
+│   ├── base.go
+│   ├── navigation.go
+├── templates/
+│   ├── base.html
+│   ├── index.html
+│   ├── menus/
+│   │   ├── bienvenida.html
+│   │   ├── reportes.html
+│   │   ├── comparativas.html
+│   │   ├── georreferenciacion.html
+│   └── layouts/
+│       ├── menu_superior.html
+│       ├── menu_lateral.html
+├── static/
+│   ├── css/
+│   │   └── styles.css
+│   └── js/
+│       └── scripts.js
+└── go.mod
+Código Mejorado
+main.go
+go
+Copiar código
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"project/handlers"
+)
+
+func main() {
+	// Configurar rutas
+	http.HandleFunc("/", handlers.BaseHandler)
+	http.HandleFunc("/navigation", handlers.NavigationHandler)
+
+	// Servir archivos estáticos
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	// Iniciar el servidor
+	fmt.Println("Servidor ejecutándose en http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+handlers/base.go
+go
+Copiar código
+package handlers
+
+import (
+	"html/template"
+	"net/http"
+)
+
+// BaseHandler maneja la carga de la página principal con la estructura base
+func BaseHandler(w http.ResponseWriter, r *http.Request) {
+	templates := template.Must(template.ParseFiles(
+		"templates/base.html",
+		"templates/menus/bienvenida.html",
+		"templates/layouts/menu_superior.html",
+		"templates/layouts/menu_lateral.html",
+	))
+
+	data := struct {
+		Title       string
+		ContentFile string
+	}{
+		Title:       "Bienvenida",
+		ContentFile: "menus/bienvenida.html",
+	}
+
+	templates.ExecuteTemplate(w, "base.html", data)
+}
+handlers/navigation.go
+go
+Copiar código
+package handlers
+
+import (
+	"html/template"
+	"net/http"
+)
+
+// NavigationHandler maneja la navegación entre las opciones del menú
+func NavigationHandler(w http.ResponseWriter, r *http.Request) {
+	page := r.URL.Query().Get("page")
+
+	var contentFile string
+	switch page {
+	case "reportes":
+		contentFile = "menus/reportes.html"
+	case "comparativas":
+		contentFile = "menus/comparativas.html"
+	case "georreferenciacion":
+		contentFile = "menus/georreferenciacion.html"
+	default:
+		contentFile = "menus/bienvenida.html"
+	}
+
+	templates := template.Must(template.ParseFiles(
+		"templates/base.html",
+		"templates/layouts/menu_superior.html",
+		"templates/layouts/menu_lateral.html",
+		"templates/" + contentFile,
+	))
+
+	data := struct {
+		Title       string
+		ContentFile string
+	}{
+		Title:       page,
+		ContentFile: contentFile,
+	}
+
+	templates.ExecuteTemplate(w, "base.html", data)
+}
+templates/base.html
+html
+Copiar código
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css" rel="stylesheet">
+</head>
+<body>
+
+    {{template "menu_superior.html" .}}
+
+    <div class="row">
+        <div class="col s3">
+            {{template "menu_lateral.html" .}}
+        </div>
+        <div class="col s9">
+            {{template .ContentFile .}}
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="/static/js/scripts.js"></script>
+</body>
+</html>
+templates/layouts/menu_superior.html
+html
+Copiar código
+<nav>
+    <div class="nav-wrapper">
+        <a href="/" class="brand-logo">Sistema</a>
+        <ul id="nav-mobile" class="right hide-on-med-and-down">
+            <li><a href="/navigation?page=bienvenida">Bienvenida</a></li>
+            <li><a href="/navigation?page=reportes">Reportes</a></li>
+            <li><a href="/navigation?page=comparativas">Comparativas</a></li>
+            <li><a href="/navigation?page=georreferenciacion">Georreferenciación</a></li>
+        </ul>
+    </div>
+</nav>
+templates/layouts/menu_lateral.html
+html
+Copiar código
+<ul class="collection">
+    <li class="collection-item"><a href="/navigation?page=bienvenida">Opción 1</a></li>
+    <li class="collection-item"><a href="/navigation?page=reportes">Opción 2</a></li>
+    <li class="collection-item"><a href="/navigation?page=comparativas">Opción 3</a></li>
+    <li class="collection-item"><a href="/navigation?page=georreferenciacion">Opción 4</a></li>
+</ul>
+templates/menus/bienvenida.html
+html
+Copiar código
+<h4>Bienvenido al sistema</h4>
+<p>Seleccione una opción del menú para continuar.</p>
+templates/menus/reportes.html
+html
+Copiar código
+<h4>Reportes</h4>
+<p>Aquí puede generar y visualizar reportes.</p>
+templates/menus/comparativas.html
+html
+Copiar código
+<h4>Comparativas</h4>
+<p>Aquí puede comparar datos entre periodos o categorías.</p>
+templates/menus/georreferenciacion.html
+html
+Copiar código
+<h4>Georreferenciación</h4>
+<p>Aquí puede visualizar datos en un mapa.</p>
+Archivos Estáticos
+static/css/styles.css
+css
+Copiar código
+body {
+    font-family: "Roboto", sans-serif;
+}
+Funcionamiento
+Al iniciar el servidor, se muestra la página principal con la opción Bienvenida cargada por defecto.
+El menú superior contiene las opciones principales. Cada opción carga contenido dinámico en el área principal (columna derecha).
+El menú lateral se actualiza con opciones específicas para cada página.
+Este enfoque es extensible y puede personalizarse fácilmente.

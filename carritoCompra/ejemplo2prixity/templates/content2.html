@@ -1,0 +1,13 @@
+<div id="content2">
+    <h2>Carrito de Compras</h2>
+    {{if .Cart}}
+        <ul>
+            {{range .Cart}}
+                <li>{{.Name}} - ${{.Price}}</li>
+            {{end}}
+        </ul>
+        <p>Total: ${{.Total}}</p>
+    {{else}}
+        <p>El carrito está vacío.</p>
+    {{end}}
+</div>

@@ -1,0 +1,222 @@
+A continuación, se amplía el ejemplo previo para integrar go-charts para la creación de gráficos y htmx para actualizaciones dinámicas en una aplicación web. El flujo general sigue siendo:
+
+Las solicitudes desde el frontend (HTML con htmx) solicitan datos para los gráficos.
+Los datos se recuperan usando DuckDB, se almacenan en Memcached si no están en caché y se generan gráficos dinámicos.
+Los gráficos se renderizan como imágenes o SVG y se muestran en la página.
+Implementación
+Archivo principal (main.go)
+go
+Copiar código
+package main
+
+import (
+	"crypto/sha1"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"sync"
+
+	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/go-echarts/go-echarts/charts"
+	"github.com/marcboeker/go-duckdb"
+)
+
+var (
+	cache *memcache.Client
+	db    *duckdb.Conn
+	mu    sync.Mutex
+)
+
+func init() {
+	// Conexión a Memcached
+	cache = memcache.New("localhost:11211")
+
+	// Conexión a DuckDB
+	var err error
+	db, err = duckdb.Open("")
+	if err != nil {
+		log.Fatalf("Error al conectar a DuckDB: %v", err)
+	}
+}
+
+// Handler para la página principal
+func handleIndex(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "templates/index.html")
+}
+
+// Handler para manejar gráficos dinámicos
+func handleChart(w http.ResponseWriter, r *http.Request) {
+	chartType := r.URL.Query().Get("chart")
+	filter := r.URL.Query().Get("filter")
+
+	if chartType == "" {
+		http.Error(w, "Falta el parámetro 'chart'", http.StatusBadRequest)
+		return
+	}
+
+	query := generateQuery(chartType, filter)
+
+	// Generar clave para el caché
+	hash := sha1.Sum([]byte(query))
+	cacheKey := hex.EncodeToString(hash[:])
+
+	// Verificar si los datos están en Memcached
+	cachedResult, err := cache.Get(cacheKey)
+	var results []map[string]interface{}
+
+	if err == nil {
+		// Si los datos están en caché, deserializarlos
+		err := json.Unmarshal(cachedResult.Value, &results)
+		if err != nil {
+			http.Error(w, "Error al deserializar el caché", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// Si no están en caché, ejecutar la consulta en DuckDB
+		rows, err := db.Query(query)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error al ejecutar la consulta: %v", err), http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		columns, _ := rows.Columns()
+		for rows.Next() {
+			rowData := make([]interface{}, len(columns))
+			rowPointers := make([]interface{}, len(columns))
+			for i := range rowData {
+				rowPointers[i] = &rowData[i]
+			}
+			rows.Scan(rowPointers...)
+			rowMap := make(map[string]interface{})
+			for i, colName := range columns {
+				rowMap[colName] = rowData[i]
+			}
+			results = append(results, rowMap)
+		}
+
+		// Serializar resultados y guardarlos en el caché
+		jsonData, _ := json.Marshal(results)
+		cache.Set(&memcache.Item{
+			Key:   cacheKey,
+			Value: jsonData,
+		})
+	}
+
+	// Crear el gráfico usando go-echarts
+	graph := createChart(chartType, results)
+
+	// Generar el gráfico y escribirlo como SVG
+	w.Header().Set("Content-Type", "image/svg+xml")
+	graph.Render(w)
+}
+
+// Genera la consulta SQL para DuckDB
+func generateQuery(chartType, filter string) string {
+	switch chartType {
+	case "user_growth":
+		return fmt.Sprintf("SELECT date, count(*) as user_count FROM read_parquet('users.parquet') WHERE date >= '%s' GROUP BY date ORDER BY date", filter)
+	case "sales":
+		return fmt.Sprintf("SELECT product, SUM(sales) as total_sales FROM read_parquet('sales.parquet') GROUP BY product ORDER BY total_sales DESC")
+	case "activity":
+		return fmt.Sprintf("SELECT user_id, activity, COUNT(*) as activity_count FROM read_parquet('activity.parquet') GROUP BY user_id, activity")
+	default:
+		return "SELECT 1"
+	}
+}
+
+// Crea un gráfico dinámico usando go-echarts
+func createChart(chartType string, data []map[string]interface{}) *charts.Line {
+	graph := charts.NewLine()
+	graph.SetGlobalOptions(
+		charts.WithTitleOpts(charts.Title{Title: fmt.Sprintf("Gráfico: %s", chartType)}),
+	)
+
+	var xAxis []string
+	var yAxis []float64
+
+	for _, row := range data {
+		switch chartType {
+		case "user_growth":
+			xAxis = append(xAxis, row["date"].(string))
+			yAxis = append(yAxis, row["user_count"].(float64))
+		case "sales":
+			xAxis = append(xAxis, row["product"].(string))
+			yAxis = append(yAxis, row["total_sales"].(float64))
+		}
+	}
+
+	graph.SetXAxis(xAxis).AddSeries("Datos", yAxis)
+	return graph
+}
+
+func main() {
+	defer db.Close()
+
+	// Rutas
+	http.HandleFunc("/", handleIndex)
+	http.HandleFunc("/chart", handleChart)
+
+	fmt.Println("Servidor ejecutándose en http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+Plantilla HTML (templates/index.html)
+html
+Copiar código
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráficos dinámicos</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+</head>
+<body>
+    <h1>Gráficos dinámicos con Go, DuckDB y Memcached</h1>
+    <form hx-get="/chart" hx-target="#chart-container">
+        <label for="chart">Selecciona el tipo de gráfico:</label>
+        <select name="chart" id="chart">
+            <option value="user_growth">Crecimiento de Usuarios</option>
+            <option value="sales">Ventas</option>
+            <option value="activity">Actividad</option>
+        </select>
+
+        <label for="filter">Filtro:</label>
+        <input type="date" name="filter" id="filter">
+
+        <button type="submit">Generar gráfico</button>
+    </form>
+
+    <div id="chart-container" style="margin-top: 20px;">
+        <!-- El gráfico se cargará aquí -->
+    </div>
+</body>
+</html>
+Características del ejemplo
+Concurrencia:
+
+El servidor maneja múltiples solicitudes concurrentes.
+Los gráficos se generan bajo demanda y no bloquean el servicio.
+Cacheo eficiente:
+
+Las consultas frecuentes se almacenan en Memcached, lo que mejora el rendimiento.
+Las claves de caché se generan dinámicamente según la consulta.
+Gráficos dinámicos:
+
+Usando go-echarts, los gráficos se generan como SVGs directamente en el servidor.
+Las actualizaciones dinámicas en la página son manejadas por htmx.
+Ventajas de este enfoque
+Optimización del rendimiento:
+
+Memcached reduce la carga en DuckDB para consultas frecuentes.
+DuckDB maneja eficientemente la lectura de archivos .parquet.
+Interactividad:
+
+La integración de htmx permite actualizaciones dinámicas sin recargar la página.
+Escalabilidad:
+
+La arquitectura es adecuada para manejar múltiples usuarios concurrentes con datos históricos.
+Este diseño es ideal para aplicaciones analíticas que requieren gráficos dinámicos basados en datos almacenados en archivos Parquet.

@@ -1,0 +1,100 @@
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"html/template"
+	"math/rand"
+	"net/http"
+	"time"
+
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/opts"
+)
+
+// Estructura para pasar datos a la plantilla
+type PageData struct {
+	ChartHTML template.HTML
+}
+
+// Función para generar un gráfico de línea con datos aleatorios
+func generateLineChart() (template.HTML, error) {
+	// Crear un gráfico de línea
+	line := charts.NewLine()
+
+	// Configurar las opciones del gráfico
+	line.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{Title: "Gráfico de Línea con go-echarts"}),
+	)
+
+	// Crear una nueva fuente de aleatoriedad utilizando el tiempo actual como semilla
+	source := rand.NewSource(time.Now().UnixNano())
+	rng := rand.New(source) // Usar el generador de números aleatorios
+
+	// Datos del eje X (días de la semana)
+	xAxisData := []string{"Lunes", "Martes", "Miércoles", "Jueves", "Viernes"}
+
+	// Datos aleatorios para el eje Y
+	var yAxisData []opts.LineData
+	for i := 0; i < len(xAxisData); i++ {
+		yAxisData = append(yAxisData, opts.LineData{Value: rng.Intn(50) + 10}) // Valores entre 10 y 59
+	}
+
+	// Añadir los datos al gráfico
+	line.SetXAxis(xAxisData).AddSeries("Serie 1", yAxisData)
+
+	// Renderizar el gráfico en un buffer
+	var buffer bytes.Buffer
+	if err := line.Render(&buffer); err != nil {
+		return "", fmt.Errorf("error al renderizar el gráfico: %v", err)
+	}
+
+	return template.HTML(buffer.String()), nil
+}
+
+// Función para renderizar la página principal
+func mainPage(w http.ResponseWriter, r *http.Request) {
+	// Generar el gráfico
+	chartHTML, err := generateLineChart()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al generar el gráfico: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Cargar la plantilla
+	tmpl, err := template.ParseFiles("index.html")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al cargar la plantilla: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Renderizar la plantilla
+	pageData := PageData{ChartHTML: chartHTML}
+	if err := tmpl.Execute(w, pageData); err != nil {
+		// Evitar escribir después de un fallo
+		fmt.Printf("Error al renderizar la plantilla: %v\n", err)
+		return
+	}
+}
+
+// Función para actualizar el gráfico (con datos aleatorios)
+func updateChart(w http.ResponseWriter, r *http.Request) {
+	// Devolver solo el gráfico actualizado con datos aleatorios
+	chartHTML, err := generateLineChart()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error al generar el gráfico: %v", err), http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprint(w, chartHTML)
+	println(chartHTML)
+}
+
+func main() {
+	http.HandleFunc("/", mainPage)                // Página principal
+	http.HandleFunc("/update-chart", updateChart) // Ruta para actualizar el gráfico
+
+	fmt.Println("Servidor ejecutándose en http://localhost:8080")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		fmt.Printf("Error al iniciar el servidor: %v\n", err)
+	}
+}

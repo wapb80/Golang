@@ -1,0 +1,41 @@
+Para solucionar este problema, te recomiendo usar SQLAlchemy en lugar de pyodbc para la conexión a SQL Server.
+
+1. Instala SQLAlchemy y el driver pyodbc:
+bash
+Copiar código
+pip install sqlalchemy pyodbc
+2. Código actualizado con SQLAlchemy:
+python
+Copiar código
+from sqlalchemy import create_engine
+import pandas as pd
+import json
+
+# Configuración de conexión usando SQLAlchemy
+server = 'nombre_servidor'
+database = 'nombre_base_de_datos'
+username = 'usuario'
+password = 'contraseña'
+driver = 'ODBC Driver 17 for SQL Server'
+
+# Crear la cadena de conexión
+engine = create_engine(f"mssql+pyodbc://{username}:{password}@{server}/{database}?driver={driver}")
+
+# Consulta SQL
+query = "SELECT * FROM tu_tabla"
+
+# Leer datos de la base de datos usando SQLAlchemy
+df = pd.read_sql(query, engine)
+
+# Convertir el DataFrame a un diccionario y luego a JSON
+data_json = df.to_dict(orient='records')
+
+# Guardar los datos en un archivo .json
+with open('resultado.json', 'w', encoding='utf-8') as file:
+    json.dump(data_json, file, ensure_ascii=False, indent=4)
+
+print("Consulta guardada en resultado.json")
+Explicación:
+SQLAlchemy: create_engine es usado para crear una conexión a SQL Server con pyodbc como driver.
+pandas.read_sql: Ahora puede usar la conexión de SQLAlchemy sin problemas.
+Esto debería resolver el error que estás enfrentando. Asegúrate de tener configurado correctamente el driver ODBC y el nombre del servidor y base de datos.

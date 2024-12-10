@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito de Compras</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+</head>
+<body>
+    <header>
+        <h1>Carrito de Compras</h1>
+        <nav>
+            <a href="/">Inicio</a>
+        </nav>
+    </header>
+    <main>
+        <div id="content1">
+            <!-- Productos disponibles -->
+            {{template "products" .}}
+        </div>
+        <div id="content2">
+            <!-- Carrito de compras -->
+            {{template "cart" .}}
+        </div>
+    </main>
+</body>
+</html>
