@@ -2,13 +2,49 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
 
 	_ "github.com/lib/pq"
 )
+
+// Handler para generar el gráfico
+func chartHandler(w http.ResponseWriter, r *http.Request) {
+	archivo := r.URL.Query().Get("archivo")
+	// Crear un gráfico de barras
+	// bar := charts.NewBar()
+	// bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: "Gráfico de Barras"}))
+	// bar.SetXAxis([]string{"Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"}).
+	// 	AddSeries("Categoría A", generateBarItems())
+
+	// // Renderizar el gráfico como HTML
+	// w.Header().Set("Content-Type", "text/html")
+	// bar.Render(w)
+
+	fmt.Println(reflect.TypeOf(archivo))
+	fmt.Print(archivo)
+
+	// Si el valor de archivo es una cadena JSON, intentar decodificarlo
+	var archivoJSON map[string]interface{}
+	err := json.Unmarshal([]byte(archivo), &archivoJSON)
+	if err != nil {
+		http.Error(w, "Error al decodificar archivo", http.StatusBadRequest)
+		return
+	}
+
+	// Imprimir el objeto decodificado
+	// fmt.Println("Objeto decodificado:", archivoJSON)
+
+	// Responder con el objeto decodificado
+	// fmt.Fprintf(w, "Objeto decodificado: %+v", archivoJSON)
+
+	renderTemplate(w, "graficosPrueba.html", nil)
+}
 
 var (
 	tmpl = template.Must(template.ParseGlob("templates/*.html"))
@@ -84,14 +120,22 @@ func filtrosHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func graficosHandler(w http.ResponseWriter, r *http.Request) {
-	//renderTemplate(w, "filtros.html", nil)
-	// err := tmpl.Execute(w, "filtros.html")
-	// if err != nil {
-	// 	log.Printf("Error al renderizar el fragmento: %v", err) // Imprimir el error
-	// 	http.Error(w, fmt.Sprintf("Error al renderizar el fragmento: %v", err), http.StatusInternalServerError)
-	// }
-	log.Println("hhh")
+	if r.Method != http.MethodPost {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+	var filters map[string]string
+	// Parsear el JSON recibido
+	err := json.NewDecoder(r.Body).Decode(&filters)
+	if err != nil {
+		http.Error(w, "Error al procesar los datos", http.StatusBadRequest)
+		return
+	}
+	// aca verificar si existe el html o se debe crear
 
+	// Aquí puedes procesar los filtros recibidos
+	fmt.Println("Filtros recibidos:", filters)
+	// renderTemplate(w, "grafico.html", nil)
 }
 
 func comunasHandler(w http.ResponseWriter, r *http.Request) {
@@ -151,6 +195,7 @@ func main() {
 	http.HandleFunc("/provincias", provinciasHandler)
 	http.HandleFunc("/comunas", comunasHandler)
 	http.HandleFunc("/graficos", graficosHandler)
+	http.HandleFunc("/chart", chartHandler)
 
 	log.Println("Servidor iniciado en http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))

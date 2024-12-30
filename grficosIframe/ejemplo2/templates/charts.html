@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gráficos Combinados</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.2/echarts.min.js"></script>
+</head>
+<body>
+    <h1>Gráficos Combinados</h1>
+    <div id="bar" style="width: 600px; height: 400px;"></div>
+    <div id="line" style="width: 600px; height: 400px;"></div>
+    <div id="pie" style="width: 600px; height: 400px;"></div>
+    <script>
+        // Insertar gráficos generados dinámicamente
+        document.getElementById("bar").innerHTML = `{{.BarChart}}`;
+        document.getElementById("line").innerHTML = `{{.LineChart}}`;
+        document.getElementById("pie").innerHTML = `{{.PieChart}}`;
+    </script>
+</body>
+</html>

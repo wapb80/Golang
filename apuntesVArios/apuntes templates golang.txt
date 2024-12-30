@@ -1,3 +1,27 @@
+variables de entorno
+
+ go env 
+
+***************************************postgres
+go get github.com/lib/pq
+
+****************************
+set GOTMPDIR=C:\Temp\Go
+
+
+************************************
+go mod tidy
+go mod download
+
+
+***********************************
+Limpiar chche
+
+go clean -cache -testcache -modcache
+
+
+******************************************
+
 
 mkdir mi-proyecto
 cd mi-proyecto

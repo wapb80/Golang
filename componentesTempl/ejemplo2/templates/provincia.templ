@@ -1,0 +1,14 @@
+package templates
+import (
+    "ejemplo2/models"
+ )
+templ ProvinciaComponent(provincias []models.Provincia) {
+  <select id="provincia" name="provincia">
+    <option value="">Seleccionar Provincia</option>
+    for _,provincia := range provincias {
+      <option value="{provincia.ID}">{provincia.Name}</option>
+    }
+  </select>
+}
+
+

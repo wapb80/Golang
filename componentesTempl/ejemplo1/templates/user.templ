@@ -1,0 +1,15 @@
+package templates
+
+import (
+    "ejemplo1/models"
+    "strconv"
+ )
+
+
+templ UserComponent(user models.User) {
+  <div class="user-card">
+    <h2>Usuario: {user.Name}</h2>
+    <p>Email: {user.Email}</p>
+    <p>Edad: { strconv.Itoa(user.Age)}</p>
+  </div>
+}

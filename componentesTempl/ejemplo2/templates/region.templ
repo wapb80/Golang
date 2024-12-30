@@ -1,0 +1,12 @@
+package templates
+import (
+    "ejemplo2/models"
+ )
+templ RegionComponent(regions []models.Region) {
+  <select id="region" name="region">
+    <option value="">Seleccionar Región</option>
+    for _, region := range regions {
+      <option value="{region.ID}">{region.Name}</option>
+    }
+  </select>
+}

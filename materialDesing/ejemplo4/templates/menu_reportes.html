@@ -6,7 +6,7 @@
     <label>Selector de Panel</label>
     <!-- <select name="selectorPanel" id="selectorPanel"> -->
     <!-- <select name="selectorPanel" id="Selector Panel" hx-get="/botonFiltros" hx-target="#botonFiltros" hx-swap="innerHTML" hx-trigger="change">       -->
-    <select name="selectorPanel" id="Selector Panel" hx-get="/botonFiltros" hx-target="#main-content" hx-swap="innerHTML" hx-trigger="change">      
+    <select name="selectorPanel" id="Selector Panel" hx-get="/botonFiltros" hx-target="#content" hx-swap="innerHTML" hx-trigger="change">      
       <option value="" disabled selected>Seleccione un Panel</option>
       {{range .SelectorPanel}}
       <option value="{{.ID}}">{{.Nombre}}</option>

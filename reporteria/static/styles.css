@@ -1,0 +1,245 @@
+
+label {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: block;
+    color: #555;
+}
+select {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    background-color: #f9f9f9;
+    transition: all 0.3s ease;
+}
+select:focus {
+    border-color: #5b9bd5;
+    background-color: #eaf5ff;
+    outline: none;
+}
+
+
+
+
+
+/********************************************************/
+
+  /* General Reset */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  /* Body Styling */
+  body {
+    font-family: 'Lato', sans-serif;
+    background-color: #f8f9fa; /* Color de fondo moderno */
+    color: #34495e; /* Texto en gris oscuro */
+  }
+
+  /* Header Styling */
+  header {
+    background-color: #2c3e50; /* Azul oscuro */
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .nav-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+  }
+
+  .nav-icons {
+    display: flex;
+    list-style-type: none;
+  }
+
+  .nav-icons li {
+    margin-left: 20px;
+  }
+
+  .nav-icons a {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .nav-icons a:hover {
+    color: #27ae60; /* Verde vibrante al pasar el ratón */
+  }
+
+  /* Main Container */
+  main {
+    display: flex;
+    height: calc(100vh - auto); /* Resta la altura del header */
+    overflow-y: hidden; /* Oculta el scroll vertical en el main */
+  }
+
+  /* Sidebar Styling */
+  #sidebar {
+    width: 250px; /* Ancho del sidebar */
+    background-color: #ffffff; /* Blanco puro */
+    height: 100%;
+    overflow-y: auto; /* Permite scroll si hay mucho contenido */
+    box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.1);
+    position: static;
+    flex-shrink: 0; /* Mantiene el ancho fijo */
+    padding: 20px; /* Espaciado interno */
+    transition: width 0.3s ease; /* Transición suave al colapsar */
+  }
+
+  #sidebar.collapsed {
+    width: 60px; /* Ancho del sidebar colapsado */
+  }
+
+  #sidebar ul {
+    list-style: none;
+    padding-left: 0; /* Sin padding izquierdo */
+  }
+
+  #sidebar li {
+    padding: 15px; /* Mayor espaciado interno */
+    background-color: #f5f5f5; /* Color de fondo claro para los items */
+    margin-bottom: 10px; /* Espacio entre elementos */
+    border-radius: 8px; /* Bordes redondeados más suaves */
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Transición suave */
+  }
+
+  #sidebar li:hover {
+    background-color: #27ae60; /* Color de fondo al pasar el ratón */
+    color: #fff; /* Color del texto al pasar el ratón */
+    transform: translateY(-2px); /* Efecto de elevación al pasar el ratón */
+  }
+
+  .empty-message {
+      text-align: center; 
+      padding: 20px; 
+      color: #666; 
+      font-size: 16px; 
+      font-style: italic; 
+   }
+
+  /* Main Content */
+  #main-content {
+    flex-grow: 1; /* Ocupa el espacio restante */
+    overflow-y: auto;
+    background-color: #ffffff; /* Fondo blanco para el contenido principal */
+    padding: 20px;
+  }
+
+  /* Custom Select Bar */
+  .custom-select-bar {
+      display : grid; 
+      grid-template-columns : repeat(5 ,1fr); 
+      gap :10px; 
+      background-color :#27ae60; /* Verde vibrante para la barra de selects */ 
+      padding :10px; 
+      position :sticky; 
+      top :0; 
+      z-index :900; 
+      box-shadow :0 2px 10px rgba(0,0,0,0.1); 
+   }
+  
+   .custom-select-bar select { 
+      padding :10px; 
+      border :1px solid #27ae60; 
+      border-radius :4px; 
+      background-color :#fff; 
+      color :#333; 
+      font-size :14px; 
+      width :100%; 
+      box-shadow :0 2px 5px rgba(0,0,0,0.1); 
+   }
+  
+   .custom-select-bar select:hover { 
+      border-color :#004d40; 
+   }
+  
+   /* Content Area */
+   .content { 
+       margin-top :20px;  
+   }
+  
+   /* Responsive Design */
+   @media (max-width :1200px) { 
+       .custom-select-bar { 
+           grid-template-columns : repeat(4 ,1fr);  
+       } 
+   }
+  
+   @media (max-width :992px) { 
+       .custom-select-bar { 
+           grid-template-columns : repeat(3 ,1fr);  
+       } 
+   }
+  
+   @media (max-width :768px) { 
+       .custom-select-bar { 
+           grid-template-columns : repeat(2 ,1fr);  
+       } 
+   }
+  
+   @media (max-width :576px) { 
+       .custom-select-bar { 
+           grid-template-columns : repeat(1 ,1fr);  
+       } 
+   }
+  
+
+   .custom-select {
+          position: relative;
+          cursor: pointer;
+          border: 1px solid #ced4da;
+          padding: 4px 12px;
+          border-radius: 4px;
+          background-color: #fff;
+          width: 100%;
+      }
+
+      .options-container {
+          display: none;
+          position: absolute;
+          top: 100%;
+          left: 0;
+          width: 100%;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          background-color: #fff;
+          z-index: 10;
+          padding: 10px;
+          box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+          max-height: 200px;
+          overflow-y: auto;
+          transform: scaleY(0);
+          transform-origin: top;
+          transition: transform 0.3s ease-in-out;
+      }
+
+      .custom-select.open .options-container {
+          display: block;
+          transform: scaleY(1);
+      }
+
+      .form-check {
+          margin-bottom: 0;
+      }
+
+      .form-check-input {
+          margin-right: 1px;
+      }
+
+      .hidden {
+          display: none !important;
+      }
+      .col-md-4 {
+          margin-bottom: 10px; /* Ajusta el valor según el espacio deseado */
+      }

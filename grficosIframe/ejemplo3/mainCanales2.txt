@@ -1,0 +1,126 @@
+package main
+
+import (
+	"bytes"
+	"math/rand"
+	"net/http"
+	"sync"
+
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/components"
+	"github.com/go-echarts/go-echarts/v2/opts"
+	"html/template"
+)
+
+var templates = template.Must(template.ParseFiles("templates/index.html", "templates/charts.html"))
+
+func main() {
+	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/generate", generateChartsHandler)
+	http.ListenAndServe(":8080", nil)
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	templates.ExecuteTemplate(w, "index.html", nil)
+}
+
+func generateChartsHandler(w http.ResponseWriter, r *http.Request) {
+	// Canal para almacenar los gráficos generados en el orden correcto
+	chartsChannel := make(chan components.Charter, 3) // Canal con capacidad de 3 para los 3 gráficos
+	var wg sync.WaitGroup
+
+	// Iniciar las gorutinas para generar los gráficos
+	wg.Add(3)
+
+	// Gráfico de barras
+	go func() {
+		defer wg.Done()
+		chartsChannel <- generateBarChart() // Enviar al canal en el orden deseado
+	}()
+
+	// Gráfico de líneas
+	go func() {
+		defer wg.Done()
+		chartsChannel <- generateLineChart() // Enviar al canal
+	}()
+
+	// Gráfico circular
+	go func() {
+		defer wg.Done()
+		chartsChannel <- generatePieChart() // Enviar al canal
+	}()
+
+	// Esperar que todas las gorutinas terminen
+	wg.Wait()
+	close(chartsChannel) // Cerrar el canal cuando todos los gráficos hayan sido enviados
+
+	// Crear una página y agregar los gráficos en el orden del canal
+	page := components.NewPage()
+	for chart := range chartsChannel { // Leer los gráficos en el orden en que fueron enviados al canal
+		page.AddCharts(chart)
+	}
+
+	// Renderizar los gráficos en un buffer
+	var buf bytes.Buffer
+	err := page.Render(&buf)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Pasar los gráficos renderizados al template charts.html
+	data := map[string]interface{}{
+		"ChartsHTML": template.HTML(buf.String()),
+	}
+	templates.ExecuteTemplate(w, "charts.html", data)
+}
+
+func generateBarChart() *charts.Bar {
+	bar := charts.NewBar()
+	bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: "Gráfico de Barras"}))
+
+	xAxis := []string{"Grupo 1", "Grupo 2", "Grupo 3"}
+	bar.SetXAxis(xAxis).AddSeries("Datos", generateRandomData())
+	return bar
+}
+
+func generateLineChart() *charts.Line {
+	line := charts.NewLine()
+	line.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: "Gráfico de Líneas"}))
+
+	xAxis := []string{"Enero", "Febrero", "Marzo"}
+	line.SetXAxis(xAxis).AddSeries("Datos", generateRandomLineData())
+	return line
+}
+
+func generatePieChart() *charts.Pie {
+	pie := charts.NewPie()
+	pie.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: "Gráfico Circular"}))
+
+	pie.AddSeries("Datos", generatePieData())
+	return pie
+}
+
+func generateRandomData() []opts.BarData {
+	items := make([]opts.BarData, 0)
+	for i := 0; i < 3; i++ {
+		items = append(items, opts.BarData{Value: rand.Intn(100)})
+	}
+	return items
+}
+
+func generatePieData() []opts.PieData {
+	items := make([]opts.PieData, 0)
+	for i := 0; i < 3; i++ {
+		items = append(items, opts.PieData{Name: "Categoría " + string(rune(i+1)), Value: rand.Intn(100)})
+	}
+	return items
+}
+
+func generateRandomLineData() []opts.LineData {
+	items := make([]opts.LineData, 0)
+	for i := 0; i < 3; i++ {
+		items = append(items, opts.LineData{Value: rand.Intn(100)})
+	}
+	return items
+}

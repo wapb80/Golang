@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+
+  <!-- Materialize CSS CDN -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<!-- Material Icons -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Lato', sans-serif;
+      background-color: #f0f4f8;
+    }
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background-color: #00796b; /* Color verde más suave */
+    }
+    main {
+      display: flex;
+      flex-direction: row;
+      padding-top: 128px; 
+      flex: 1;
+      overflow: hidden;
+    }
+    #sidebar {
+      width: 350px;
+      background-color: #ffffff; /* Blanco para mayor claridad */
+      padding: 20px;
+      height: 100vh;
+      overflow-y: auto;
+      box-shadow: 2px 0px 5px rgba(0,0,0,0.1);
+    }
+    #main-content {
+      flex: 1;
+      padding: 20px;
+      background-color: #ffffff; 
+      box-shadow: -2px 0px 5px rgba(0,0,0,0.1);
+    }
+    nav .brand-logo {
+      font-size: 1.8rem;
+      padding-left: 20px;
+    }
+    nav .nav-icons li a {
+      display: flex;
+      align-items: center;
+      transition: background-color 0.3s ease; /* Transición suave */
+    }
+    nav .nav-icons li a:hover {
+      background-color: rgba(255,255,255,0.1); /* Efecto hover */
+    }
+    .card {
+      margin-bottom: 20px;
+      padding: 20px;
+      box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+    }
+    .custom-select-bar {
+      background-color: #004d40; 
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    @media only screen and (max-width: 768px) {
+        #sidebar {
+            width: 100%;
+            height: auto;
+            position: relative; 
+        }
+        #main-content {
+            padding: 10px; 
+        }
+        nav .search-bar select {
+            width: 100%; 
+        }
+    }
+    
+    /* Mejora en los selects */
+    .input-field select {
+        border-radius: 4px; 
+        border-color: #00796b; 
+        transition: border-color 0.3s ease; 
+    }
+
+    .input-field select:hover {
+        border-color: #004d40; 
+    }
+
+    /* Efecto en botones */
+    .btn:hover {
+        background-color: #004d40; 
+        transition-duration: 0.3s; 
+    }
+
+</style>
+</head>
+<body>
+<!-- Menú superior -->
+<header>
+<nav>
+<div class="nav-wrapper teal">
+<a href="#" class="brand-logo">Sistema</a>
+<ul id="nav-mobile" class="right nav-icons hide-on-med-and-down">
+<li><a href="/" hx-get="/welcome" hx-target="#main-content"><i class="material-icons">home</i>Inicio</a></li>
+<li><a href="/reportes" hx-get="/menu/reportes" hx-target="#sidebar"><i class="material-icons">insert_chart</i>Reportes</a></li>
+<li><a href="/comparativas" hx-get="/menu/comparativas" hx-target="#sidebar"><i class="material-icons">compare_arrows</i>Comparativas</a></li>
+<li><a href="/georreferenciacion" hx-get="/menu/georreferenciacion" hx-target="#sidebar"><i class="material-icons">map</i>Georreferenciación</a></li>
+<li><a href="/profile" hx-get="/profile" hx-target="#main-content"><i class="material-icons">account_circle</i>Perfil</a></li>
+</ul>
+</div>
+<div class="nav-wrapper teal custom-select-bar">
+<a href="#" class="brand-logo">Filtros</a>
+<ul id="nav-mobile" class="right">
+<li>
+<div class="input-field">
+<select>
+<option value="" disabled selected>Opción 1</option>
+<option value="1">Primera opción</option>
+<option value="2">Segunda opción</option>
+</select>
+</div>
+</li>
+<li>
+<div class="input-field">
+<select>
+<option value="" disabled selected>Opción 2</option>
+<option value="1">Primera opción</option>
+<option value="2">Segunda opción</option>
+</select>
+</div>
+</li>
+</ul>
+</div>
+</nav>
+</header>
+
+<main>
+<div id="sidebar">
+<h5><i class="material-icons">menu</i> Menú lateral</h5>
+<p>Selecciona una opción del menú superior.</p>
+</div>
+
+<div id="main-content">
+<h4><i class="material-icons">dashboard</i> Bienvenido al sistema</h4>
+<p>Selecciona un menú para ver más opciones.</p>
+</div>
+</main>
+
+<!-- Materialize JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<!-- HTMX CDN -->
+<script src="https://unpkg.com/htmx.org"></script>
+
+<script>
+// Inicializar select al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+var elems = document.querySelectorAll('select');
+M.FormSelect.init(elems);
+});
+
+// Re-inicializar select después de HTMX
+document.addEventListener('htmx:afterSettle', function() {
+var elems = document.querySelectorAll('select');
+M.FormSelect.init(elems);
+});
+
+// Capturar cambios en cualquier select
+document.addEventListener('change', function(event) {
+if (event.target.tagName === 'SELECT') {
+const selectedValue = event.target.value;
+console.log('Seleccionaste: ' + selectedValue);
+}
+});
+</script>
+
+</body>
+</html>

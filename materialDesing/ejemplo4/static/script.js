@@ -1,8 +1,8 @@
 document.addEventListener("htmx:afterSwap", (event) => {
-    if (event.target.id === "main-content") {
+    if (event.target.id === "content") {
         // Lógica de inicialización de tu contenido , cunado el main-content sufre cambios
         console.log("Nuevo contenido cargado en #main-content");
-
+      
         // activa la funcionalidad de los filtros
                                   // Variables
                             const filtersCard = document.getElementById('filtersCard');
@@ -112,7 +112,6 @@ document.addEventListener("htmx:afterSwap", (event) => {
                                     });
 
 
-
                                         // Actualizar el contenido de results
                                         const resultsDiv = document.getElementById('results');
 
@@ -127,6 +126,51 @@ document.addEventListener("htmx:afterSwap", (event) => {
                                             resultsDiv.textContent = 'No hay resultados.'; // Mensaje si no hay filtros
                                         }
                                         
+
+                                       // console.log(document.getElementById('filtrosF').value)
+
+                                                                                // ---------------------------------------------------------
+                                        // Enviar los filtros al servidor
+                                        // fetch('/graficos', {
+                                        //     method: 'POST', // Usamos POST para enviar datos
+                                        //     headers: {
+                                        //         'Content-Type': 'application/json', // Indicamos que es un JSON
+                                        //     },
+                                        //     body: JSON.stringify(filters), // Convertimos el objeto filters a JSON
+                                        // })
+
+                                        const iframe = document.getElementById('chartFrame');
+                                        iframe.src = `/chart?archivo=${JSON.stringify(filters)}`; // Carga el gráfico generado por el backend
+                                        
+                                        // .then(response => response.text()) // Recibir la respuesta como HTML
+                                        // .then(html => {
+                                        //     document.getElementById('contentGraficos').innerHTML = html; // Renderizar en #content
+                                        // })
+                                        // .catch(error => console.error("Error:", error));
+
+                                        
+                                        // // ---------------------------------------------------------
+
+                                    // // Crear o actualizar el campo oculto en el formulario
+                                    // const form = document.getElementById('filtersForm');
+                                    // let hiddenInput = form.querySelector('input[name="filters"]');
+
+
+
+                                    // // Asignar el valor JSON de los filtros al campo oculto
+                                    
+                                    
+                                   
+                                        
+                                    //     console.log(document.getElementById('filtrosF').value)
+                                    //     url="/graficos"
+                                    //     htmx.ajax('POST', url, { 
+                                    //         target: "#content", // El elemento que se actualizará
+                                    //         swap: 'innerHTML' // Cómo se actualizará el contenido
+                                           
+                
+                                    //     });
+
 
                               
                              });

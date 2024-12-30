@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Generar Gráficos Dinámicos</title>
+</head>
+<body>
+
+<h1>Generar Gráficos Dinámicos</h1>
+
+<form id="chartForm">
+   <label for="age">Edad:</label>
+   <select id="age" name="age">
+       <option value="18-25">18-25</option>
+       <option value="26-35">26-35</option>
+       <option value="36-45">36-45</option>
+       <option value="46+">46+</option>
+   </select>
+
+   <label for="gender">Género:</label>
+   <select id="gender" name="gender">
+       <option value="masculino">Masculino</option>
+       <option value="femenino">Femenino</option>
+       <option value="otro">Otro</option>
+   </select>
+
+   <label for="nationality">Nacionalidad:</label>
+   <select id="nationality" name="nationality">
+       <option value="nacionalidad1">Nacionalidad 1</option>
+       <option value="nacionalidad2">Nacionalidad 2</option>
+       <option value="nacionalidad3">Nacionalidad 3</option>
+       <option value="nacionalidad4">Nacionalidad 4</option>
+   </select>
+
+   <button type="button" id="loadCharts">Generar Gráficos</button>
+</form>
+
+<iframe id="chartsFrame" style="width:80%; height:600px; border:none;"></iframe>
+
+<script>
+document.getElementById('loadCharts').addEventListener('click', function() {
+   const form = document.getElementById('chartForm');
+   const formData = new FormData(form);
+   
+   fetch('/generate', {
+       method: 'POST',
+       body: formData,
+   })
+   .then(response => response.text())
+   .then(data => {
+       document.getElementById('chartsFrame').srcdoc = data; // Cargar todos los gráficos en un solo iframe
+   });
+});
+</script>
+
+</body>
+</html>

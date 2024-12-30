@@ -1,0 +1,370 @@
+Ejemplo en Python con DuckDB
+python
+Copiar código
+import duckdb
+
+# Conexión a PostgreSQL
+pg_connection_string = "postgresql://user:password@localhost:5432/source_db"
+
+# Crear o conectar a un archivo SQLite
+sqlite_file = "destination.db"
+
+# Usar DuckDB para manejar la migración
+with duckdb.connect() as con:
+    # Conectar a PostgreSQL y copiar datos de una tabla
+    con.execute(f"""
+        INSTALL postgres;
+        LOAD postgres;
+
+        -- Conectar a PostgreSQL
+        SET postgres_enable_direct_io=true;
+        SET postgres_connection '{pg_connection_string}';
+
+        -- Crear base de datos SQLite
+        SET sqlite_output_database '{sqlite_file}';
+
+        -- Leer todas las tablas de PostgreSQL
+        CREATE SCHEMA sqlite; -- Esquema SQLite
+        IMPORT DATABASE postgres INTO sqlite;
+
+        -- Opcional: Visualizar tablas creadas
+        PRAGMA show_tables;
+    """)
+Ventajas del código
+Automatización total: Carga todas las tablas de PostgreSQL y las copia automáticamente a SQLite.
+SQL nativo: Puedes usar SQL para realizar ajustes específicos (filtrado, renombrar columnas, etc.) durante la migración.
+Ejemplo en Go con DuckDB
+Si prefieres usar Go, puedes integrar DuckDB con el paquete cgo. Aquí un ejemplo básico:
+
+Requisitos previos
+Instala DuckDB en tu sistema (libduckdb debe estar disponible).
+Usa un paquete como github.com/marcboeker/go-duckdb para manejar DuckDB.
+Código en Go
+go
+Copiar código
+package main
+
+import (
+	"database/sql"
+	"log"
+
+	_ "github.com/marcboeker/go-duckdb" // DuckDB driver
+)
+
+func main() {
+	// Crear conexión a DuckDB
+	db, err := sql.Open("duckdb", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Migrar datos desde PostgreSQL a SQLite
+	_, err = db.Exec(`
+		INSTALL postgres;
+		LOAD postgres;
+
+		SET postgres_enable_direct_io=true;
+		SET postgres_connection 'postgresql://user:password@localhost:5432/source_db';
+
+		SET sqlite_output_database 'destination.db';
+
+		IMPORT DATABASE postgres INTO sqlite;
+	`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Migración completada con éxito.")
+}
+Ventajas de DuckDB frente a otras estrategias
+Sin pasos intermedios: No necesitas leer y escribir datos manualmente en archivos intermedios.
+Flexible: Permite realizar transformaciones y migraciones en SQL directamente.
+Compatible: DuckDB puede integrarse fácilmente con lenguajes como Python, Go o incluso scripts SQL puros.
+
+
+
+
+#################################################################
+
+
+específicas al migrar de PostgreSQL a SQLite usando DuckDB.
+
+Ejemplo 1: Migrar una sola tabla con transformación de datos
+Supongamos que tienes una tabla llamada employees en PostgreSQL y necesitas:
+
+Migrar solo las columnas id, name, y salary.
+Calcular una columna adicional salary_in_usd (conversión de salary a dólares usando una tasa fija).
+Filtrar solo los empleados activos (status = 'active').
+SQL con DuckDB
+sql
+Copiar código
+INSTALL postgres;
+LOAD postgres;
+
+-- Conectar a PostgreSQL
+SET postgres_enable_direct_io=true;
+SET postgres_connection 'postgresql://user:password@localhost:5432/source_db';
+
+-- Conectar a SQLite
+SET sqlite_output_database 'destination.db';
+
+-- Crear la tabla en SQLite con transformación
+CREATE TABLE sqlite.employees AS
+SELECT
+    id,
+    name,
+    salary,
+    salary * 0.8 AS salary_in_usd -- Ejemplo de conversión de moneda
+FROM postgres.employees
+WHERE status = 'active'; -- Filtrar empleados activos
+Notas
+La tabla sqlite.employees se creará con las columnas seleccionadas y los datos transformados directamente.
+Puedes agregar transformaciones adicionales en el SELECT.
+Ejemplo 2: Migrar múltiples tablas con prefijos
+Si necesitas copiar varias tablas, pero quieres agregar un prefijo pg_ a sus nombres en SQLite para diferenciarlas, puedes usar un bucle en DuckDB.
+
+SQL con DuckDB
+sql
+Copiar código
+INSTALL postgres;
+LOAD postgres;
+
+-- Conectar a PostgreSQL
+SET postgres_enable_direct_io=true;
+SET postgres_connection 'postgresql://user:password@localhost:5432/source_db';
+
+-- Conectar a SQLite
+SET sqlite_output_database 'destination.db';
+
+-- Migrar tablas específicas con prefijos
+CREATE TABLE sqlite.pg_customers AS SELECT * FROM postgres.customers;
+CREATE TABLE sqlite.pg_orders AS SELECT * FROM postgres.orders;
+CREATE TABLE sqlite.pg_products AS SELECT * FROM postgres.products;
+Notas
+Cambia customers, orders y products por las tablas que deseas migrar.
+Puedes incluir transformaciones en el SELECT si es necesario.
+Ejemplo 3: Renombrar columnas durante la migración
+Supongamos que necesitas copiar una tabla orders pero con columnas renombradas para mayor claridad.
+
+SQL con DuckDB
+sql
+Copiar código
+INSTALL postgres;
+LOAD postgres;
+
+-- Conectar a PostgreSQL
+SET postgres_enable_direct_io=true;
+SET postgres_connection 'postgresql://user:password@localhost:5432/source_db';
+
+-- Conectar a SQLite
+SET sqlite_output_database 'destination.db';
+
+-- Renombrar columnas
+CREATE TABLE sqlite.orders_renamed AS
+SELECT
+    order_id AS id,
+    customer_id AS client_id,
+    order_date AS date,
+    total_amount AS total
+FROM postgres.orders;
+Notas
+En este ejemplo, las columnas order_id, customer_id, order_date, y total_amount se renombraron a id, client_id, date, y total respectivamente.
+Ejemplo 4: Migrar con datos agregados
+Si necesitas sumar totales o realizar cálculos como promedio antes de migrar, puedes hacerlo directamente en DuckDB.
+
+SQL con DuckDB
+sql
+Copiar código
+INSTALL postgres;
+LOAD postgres;
+
+-- Conectar a PostgreSQL
+SET postgres_enable_direct_io=true;
+SET postgres_connection 'postgresql://user:password@localhost:5432/source_db';
+
+-- Conectar a SQLite
+SET sqlite_output_database 'destination.db';
+
+-- Migrar datos agregados (sumar ventas por cliente)
+CREATE TABLE sqlite.customer_sales AS
+SELECT
+    customer_id,
+    COUNT(*) AS order_count,
+    SUM(total_amount) AS total_sales,
+    AVG(total_amount) AS average_order_value
+FROM postgres.orders
+GROUP BY customer_id;
+Notas
+Este ejemplo calcula el número de órdenes, el total de ventas y el valor promedio de las órdenes por cliente.
+Ejemplo 5: Exportar a un archivo intermedio y luego a SQLite
+En lugar de copiar directamente, puedes exportar datos a un archivo Parquet (para su portabilidad) y luego importarlos a SQLite.
+
+Exportar datos a Parquet
+sql
+Copiar código
+INSTALL postgres;
+LOAD postgres;
+
+-- Conectar a PostgreSQL
+SET postgres_enable_direct_io=true;
+SET postgres_connection 'postgresql://user:password@localhost:5432/source_db';
+
+-- Exportar datos a un archivo Parquet
+COPY (SELECT * FROM postgres.employees) TO 'employees.parquet' (FORMAT 'parquet');
+Importar Parquet a SQLite
+sql
+Copiar código
+-- Conectar a SQLite
+SET sqlite_output_database 'destination.db';
+
+-- Crear tabla en SQLite desde Parquet
+CREATE TABLE sqlite.employees AS SELECT * FROM 'employees.parquet';
+Ejemplo 6: Manejo de datos relacionados
+Si trabajas con datos relacionados, puedes mantener las claves foráneas durante la migración.
+
+SQL con DuckDB
+sql
+Copiar código
+INSTALL postgres;
+LOAD postgres;
+
+-- Conectar a PostgreSQL
+SET postgres_enable_direct_io=true;
+SET postgres_connection 'postgresql://user:password@localhost:5432/source_db';
+
+-- Conectar a SQLite
+SET sqlite_output_database 'destination.db';
+
+-- Migrar tablas relacionadas
+CREATE TABLE sqlite.products AS SELECT * FROM postgres.products;
+CREATE TABLE sqlite.orders AS SELECT * FROM postgres.orders;
+
+-- Crear claves foráneas manualmente en SQLite (opcional)
+PRAGMA foreign_keys = ON;
+ALTER TABLE sqlite.orders ADD CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES sqlite.products(id);
+Resumen
+Con DuckDB, puedes realizar transformaciones, renombrar columnas, agregar prefijos o incluso manejar datos agregados directamente en SQL, simplificando el proceso de migración.
+
+
+#################################################  ESTOS CMNADOS UTILICE PARA LA CONECCION FUNCIONARA 
+
+
+################################################################################
+
+https://duckdb.org/2024/01/26/multi-database-support-in-duckdb.html
+https://duckdb.org/docs/configuration/overview
+https://duckdb.org/docs/guides/database_integration/postgres
+################################################################################
+
+
+
+INSTALE LA ULTIMA VERSION DESDE EL REPOSITORIO ->VERSION V1.1.3
+
+
+SELECT * FROM duckdb_extensions();
+
+
+INSTALL postgres;
+LOAD postgres
+ATTACH 'dbname=reporteria-tdcla user=postgres host=34.176.145.126 port=5432 password=h7o_VH[r$]Y[%:h{' AS db (TYPE POSTGRES, READ_ONLY);
+############## ojo el AS db , hace referencia al nombre de la conexion a postgresql
+
+INSTALL sqlite;
+LOAD sqlite;
+ATTACH 'sqlite:salida.db' AS sqlite; 
+
+
+
+
+create table sqlite.comparativas AS FROM db.public.comparativas;  ## copiar los datos desde postgres a sqlite ,, se usa from por que se puede omitir el select *
+
+
+select * from sqlite.comparativas limit 1; ## ver los datos en sqlite
+
+
+CREATE TABLE reporteria AS SELECT * from sqlite.comparativas;  ## pasar los datos a memoria
+
+#####HACERLO PERSISTENTE 
+
+ATTACH DATABASE 'mi_base_de_datos.duckdb' AS persistent_db;
+
+-- Copiar los datos de la base en memoria a la base persistente
+CREATE TABLE persistent_db.mi_tabla AS SELECT * FROM in_memory.mi_tabla;
+
+
+
+Para salir del cliente interactivo de DuckDB, puedes utilizar el siguiente comando:
+.quit
+
+
+
+
+-- Crear una base de datos persistente o conectarte a una existente
+ATTACH DATABASE 'mi_base_de_datos.duckdb' AS mydb;
+Esto guardará la base de datos como mi_base_de_datos.duckdb en el sistema de archivos. Si el archivo no existe, DuckDB lo creará.
+
+
+Hacer un backup de la base de datos:
+
+BACKUP DATABASE TO 'backup_base.duckdb';
+
+
+
+Pasos para hacer una base de datos en memoria persistente:
+Crear la base de datos en memoria: Si no lo has hecho ya, puedes crear una base de datos en memoria con el siguiente comando (aunque normalmente es implícito si no especificas un archivo al inicio):
+
+sql
+Copiar código
+-- Crear una base de datos en memoria (opcional, si ya tienes la base en memoria)
+ATTACH DATABASE ':memory:' AS in_memory;
+Guardar la base de datos en un archivo persistente: Para hacerla persistente, simplemente "adjunta" la base de datos en memoria a un archivo en el sistema de archivos. Esto hará que la base de datos sea guardada en el archivo, y no se perderá después de cerrar la sesión.
+
+sql
+Copiar código
+-- Hacer la base de datos persistente en un archivo
+ATTACH DATABASE 'mi_base_de_datos.duckdb' AS persistent_db;
+En este ejemplo, la base de datos mi_base_de_datos.duckdb se creará (si no existe) y se guardarán todos los cambios en ese archivo. A partir de este momento, podrás seguir trabajando en ella y los datos no se perderán.
+
+Copiar los datos de la base en memoria al archivo persistente: Si ya tienes tablas o datos en la base de datos en memoria y quieres que se reflejen en la base de datos persistente, puedes usar un INSERT INTO para transferir los datos.
+
+sql
+Copiar código
+-- Copiar los datos de la base en memoria a la base persistente
+CREATE TABLE persistent_db.mi_tabla AS SELECT * FROM in_memory.mi_tabla;
+De esta forma, copiarás todas las tablas y datos de la base en memoria a la base de datos persistente.
+
+Verificar que los datos se guardaron correctamente: Una vez que hayas copiado los datos, puedes verificar que las tablas se hayan guardado en la base de datos persistente utilizando:
+
+sql
+Copiar código
+-- Verificar las tablas en la base persistente
+SHOW TABLES FROM persistent_db;
+Resumiendo:
+Usa ATTACH DATABASE para vincular un archivo persistente.
+Copia los datos de la base en memoria a la base persistente.
+Todos los datos se guardarán en el archivo especificado y no se perderán después de cerrar la sesión.
+
+
+
+
+Sí, en DuckDB existe un comando contrario a ATTACH DATABASE, que es DETACH DATABASE. Este comando se utiliza para "desvincular" una base de datos que has adjuntado previamente. Esto te permite eliminar la conexión a una base de datos sin eliminarla ni afectar su contenido, simplemente deja de estar disponible en la sesión actual.
+
+Sintaxis de DETACH DATABASE
+Para desvincular una base de datos que has adjuntado previamente, usa el siguiente comando:
+
+sql
+Copiar código
+DETACH DATABASE nombre_base_de_datos;
+Ejemplo:
+Si adjuntaste una base de datos llamada mi_base_de_datos.duckdb con el comando ATTACH DATABASE, y ahora deseas desvincularla, puedes hacerlo así:
+
+sql
+Copiar código
+DETACH DATABASE mi_base_de_datos;
+Consideraciones:
+No elimina la base de datos ni sus datos: El comando DETACH solo desvincula la base de datos de la sesión actual de DuckDB. Los datos seguirán existiendo en el archivo de la base de datos en el sistema de archivos.
+Solo afecta a la sesión activa: Si abres otra sesión de DuckDB, podrás adjuntar la base de datos nuevamente.
+Resumen:
+ATTACH DATABASE: Vincula un archivo de base de datos a la sesión.
+DETACH DATABASE: Desvincula un archivo de base de datos de la sesión.

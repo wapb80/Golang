@@ -168,7 +168,9 @@ select:focus {
    .content { 
        margin-top :20px;  
    }
-  
+   .contentGraficos { 
+    margin-top :20px;  
+}
    /* Responsive Design */
    @media (max-width :1200px) { 
        .custom-select-bar { 

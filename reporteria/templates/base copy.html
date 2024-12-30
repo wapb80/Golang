@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+
+  <!-- Materialize CSS CDN -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+    }
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background-color: #0288d1;
+    }
+    main {
+      display: flex;
+      flex-direction: row;
+      padding-top: 128px; /* Ajustado para el nuevo menú superior */
+      flex: 1;
+      overflow: hidden;
+    }
+    #sidebar {
+      width: 350px;
+      background-color: #f5f5f5;
+      padding: 20px;
+      height: 100vh;
+      overflow-y: auto;
+      position: relative;
+    }
+    #main-content {
+      flex: 1;
+      padding: 20px;
+      background-color: #ffffff;
+    }
+    .menu-item {
+      margin-bottom: 20px;
+    }
+    .menu-item select {
+      font-size: 1rem;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    nav .brand-logo {
+      font-size: 1.8rem;
+      padding-left: 20px;
+    }
+    /* Estilo del nuevo menú superior */
+    nav .search-bar input {
+      width: 300px;
+      margin-right: 10px;
+    }
+    /* Estilo de las tarjetas de los selects */
+    .card {
+      margin-bottom: 20px;
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 1.4rem;
+    }
+    /* Estilo para botones y acciones */
+    .btn {
+      margin-top: 20px;
+    }
+    /* Responsive design */
+    @media only screen and (max-width: 768px) {
+      #sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+      }
+      #main-content {
+        padding: 10px;
+      }
+      nav .search-bar input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Menú superior -->
+  <header>
+    <nav>
+      <div class="nav-wrapper teal">
+        <a href="#" class="brand-logo">Sistema</a>
+        <!-- Menú de navegación superior -->
+        <ul id="nav-mobile" class="right hide-on-med-and-down">
+          <li><a href="/" hx-get="/welcome" hx-target="#main-content">Bienvenida</a></li>
+          <li><a href="/reportes" hx-get="/menu/reportes" hx-target="#sidebar">Reportes</a></li>
+          <li><a href="/comparativas" hx-get="/menu/comparativas" hx-target="#sidebar">Comparativas</a></li>
+          <li><a href="/georreferenciacion" hx-get="/menu/georreferenciacion" hx-target="#sidebar">Georreferenciación</a></li>
+          <li>
+            <!-- Barra de búsqueda -->
+            <form action="#" class="search-bar">
+              <input type="text" placeholder="Buscar..." id="search-input">
+              <button type="submit" class="btn-small"><i class="material-icons">search</i></button>
+            </form>
+          </li>
+          <li><a href="/profile" hx-get="/profile" hx-target="#main-content"><i class="material-icons">account_circle</i> Perfil</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Menú lateral -->
+    <div id="sidebar">
+      <h5>Menú lateral</h5>
+      <p>Selecciona una opción del menú superior.</p>
+    </div>
+
+    <!-- Contenido principal -->
+    <div id="main-content">
+      <h4>Bienvenido al sistema</h4>
+      <p>Selecciona un menú para ver más opciones.</p>
+    </div>
+  </main>
+
+  <!-- Materialize JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  
+  <!-- HTMX CDN -->
+  <script src="https://unpkg.com/htmx.org"></script>
+
+  <script>
+    // Inicializar selects de Materialize después de que HTMX actualiza contenido
+    document.addEventListener('htmx:afterSettle', function() {
+      var elems = document.querySelectorAll('select');
+      M.FormSelect.init(elems);
+    });
+
+    // Agregar funcionalidad para la barra de búsqueda (como un ejemplo)
+    document.querySelector('.search-bar').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const query = document.getElementById('search-input').value;
+      alert('Buscando: ' + query);
+    });
+  </script>
+</body>
+</html>

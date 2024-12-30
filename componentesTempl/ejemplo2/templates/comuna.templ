@@ -1,0 +1,12 @@
+package templates
+import (
+    "ejemplo2/models"
+ )
+templ ComunaComponent(comunas []models.Comuna) {
+  <select id="comuna" name="comuna">
+    <option value="">Seleccionar Comuna</option>
+    for _, comuna := range comunas {
+      <option value="{comuna.ID}">{comuna.Name}</option>
+    }
+  </select>
+}

@@ -1,0 +1,64 @@
+<div>
+  <h5>Opciones de Reportes</h5>
+
+  <!-- Categorías -->
+  <div class="menu-item">
+    <label>Selector de Panel</label>
+    <!-- <select name="selectorPanel" id="selectorPanel"> -->
+    <!-- <select name="selectorPanel" id="Selector Panel" hx-get="/botonFiltros" hx-target="#botonFiltros" hx-swap="innerHTML" hx-trigger="change">       -->
+    <select name="selectorPanel" id="Selector Panel" hx-get="/botonFiltros" hx-target="#main-content" hx-swap="innerHTML" hx-trigger="change">      
+      <option value="" disabled selected>Seleccione un Panel</option>
+      {{range .SelectorPanel}}
+      <option value="{{.ID}}">{{.Nombre}}</option>
+      {{end}}
+    </select>
+  </div>
+
+    <!-- Anio-->
+    <div class="menu-item">
+      <label>Seleccione el Año</label>
+      <select name="anio" id="Año">
+        {{range .Anio}}
+        <option value="{{.ID}}">{{.Nombre}}</option>
+        {{end}}
+      </select>
+    </div>
+
+        <!-- Encuestas-->
+        <div class="menu-item">
+          <label>Encuesta</label>
+          <select name="encuesta" id="Encuesta">
+            {{range .Encuesta}}
+            <option value="{{.ID}}">{{.Nombre}}</option>
+            {{end}}
+          </select>
+        </div>
+
+  <!-- Regiones -->
+  <div class="menu-item">
+    <label>Región</label>
+    <select name="region" id="Region" hx-get="/provincias" hx-target="#optionregion" hx-swap="innerHTML" hx-trigger="change">
+       {{range .Regiones}}
+      <option value="{{.ID}}">{{.Nombre}}</option>
+      {{end}}
+    </select>
+  </div>
+
+<div id="optionregion">
+    <!-- Provincias -->
+    <div class="menu-item">
+      <label>Provincia</label>
+      <select name="provincia" id="Provincia" hx-get="/comunas" hx-target="#Comuna" hx-trigger="change">
+        <option value="0" disabled selected>Todas</option>
+      </select>
+    </div>
+
+    <!-- Comunas -->
+    <div class="menu-item">
+      <label>Comuna</label>
+      <select name="comuna" id="Comuna">
+        <option value="0" disabled selected>Todas</option>
+      </select>
+    </div>
+  </div>
+</div>
