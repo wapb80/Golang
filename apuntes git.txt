@@ -1,0 +1,7 @@
+git remote -v                          # Verificar los remotos configurados
+git remote remove origin                # Eliminar el remoto antiguo
+git remote add origin https://github.com/tu_usuario/nombre_del_repositorio.git  # Agregar el nuevo remoto
+git remote -v                          # Verificar que se haya agregado correctamente
+git add .                              # Agregar todos los archivos al área de preparación
+git commit -m "Descripción del commit"  # Confirmar los cambios
+git push -u origin main                # Subir cambios al nuevo repositorio
