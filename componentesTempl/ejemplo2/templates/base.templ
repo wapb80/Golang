@@ -16,8 +16,10 @@ templ Base(title string, content templ.Component) {
       </header>
       
       <main>
-       
+        @content
         @RegionComponent1()
+
+        
       </main>
       
       <footer>

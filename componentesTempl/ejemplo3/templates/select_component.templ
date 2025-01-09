@@ -1,0 +1,16 @@
+package templates
+import (
+    "ejemplo3/models"
+ )
+templ SelectComponent(id string, name string, placeholder string, options []models.Region) {
+  <label for={id}>{placeholder}:</label>
+  <select id={id} name={name} 
+          hx-get="/communes" 
+          hx-target="#comuna" 
+          hx-swap="innerHTML">
+    <option value="">{placeholder}</option>
+    for _, option := range options {
+      <option value={option.ID}>{option.Name}</option>
+    }
+  </select>
+}

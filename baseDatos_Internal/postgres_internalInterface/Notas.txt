@@ -1,0 +1,111 @@
+
+Esta estructura divide claramente las responsabilidades:
+
+cmd/server/main.go: 	Punto de entrada de la aplicación.
+internal/handlers: 	    Controladores HTTP para manejar solicitudes.
+internal/repository: 	Acceso directo a la base de datos.
+internal/service: 	    Lógica empresarial (validaciones, reglas).
+internal/models: 	    Definiciones de estructuras de datos.
+migrations: 		    Scripts SQL para inicializar la base de datos.
+
+
+
+
+********************************************************************************************
+
+userRepo := repository.NewUserRepository(db)
+userService := service.NewUserService(userRepo)
+userHandler := handlers.NewUserHandler(userService)
+
+Objetivo: 	Implementar inyección de dependencias.
+Flujo:
+UserRepository 	se conecta directamente a la base de datos.
+UserService 	utiliza el repositorio para lógica empresarial.
+UserHandler 	utiliza el servicio para manejar peticiones HTTP.
+
+
+********************************************************************************************
+ 										internal/repository/user_repository.go
+Este archivo gestiona directamente la comunicación con la base de datos.
+
+
+
+func (r *UserRepository) GetAll() ([]models.User, error) {
+    rows, err := r.db.Query("SELECT id, name, email FROM users")
+Objetivo: Consultar todos los usuarios en la base de datos.
+rows.Scan: Itera sobre los resultados y los almacena en una estructura (models.User).
+
+
+
+func (r *UserRepository) Create(user models.User) error {
+    _, err := r.db.Exec("INSERT INTO users (name, email) VALUES ($1, $2)", user.Name, user.Email)
+Objetivo: Inserta un nuevo usuario en la base de datos.
+Prepared Statement: Usa $1 y $2 para evitar inyecciones SQL.
+
+
+
+********************************************************************************************
+ 											internal/service/user_service.go
+Este archivo contiene la lógica empresarial y valida los datos.
+
+
+func (s *UserService) GetUsers() ([]models.User, error) {
+    return s.repo.GetAll()
+}
+
+Objetivo: Llama al repositorio para obtener los datos.
+Capa de Abstracción: Permite añadir validaciones o lógica adicional antes de devolver los resultados.
+
+
+
+func (s *UserService) CreateUser(user models.User) error {
+    return s.repo.Create(user)
+}
+
+Objetivo: Valida o transforma los datos antes de llamar al repositorio.
+
+
+
+
+********************************************************************************************
+											internal/handlers/user_handler.go
+
+
+Este archivo maneja las solicitudes HTTP y responde con datos en formato JSON.
+
+
+func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
+    users, err := h.service.GetUsers()
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    json.NewEncoder(w).Encode(users)
+}
+Objetivo: Responder con una lista de usuarios en formato JSON.
+Manejo de Errores: Devuelve un código 500 en caso de error.
+
+
+
+func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+    var user models.User
+    if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+    if err := h.service.CreateUser(user); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    w.WriteHeader(http.StatusCreated)
+}
+Objetivo: Crear un nuevo usuario a partir de los datos enviados en el cuerpo del HTTP Request.
+Validación de JSON: Se asegura de que los datos recibidos sean válidos.
+
+
+
+****************************************
+
+El repositorio (database/user_repo.go) solo se encarga de interactuar con la base de datos.
+El servicio (service/user_service.go) gestiona la lógica de negocio.
+El controlador (handlers/user_handler.go) se centra en procesar solicitudes HTTP y respuestas.

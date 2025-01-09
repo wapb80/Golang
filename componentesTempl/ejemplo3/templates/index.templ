@@ -1,0 +1,27 @@
+package templates
+import (
+    "ejemplo3/models"
+ )
+
+templ IndexPage(provincias []models.Provincia, comunas []models.Comuna) {
+    @Base(){
+        <h1>Seleccione Provincia, Región y Comuna</h1>
+            <form>
+                <!-- Select Provincia -->
+                //  @SelectComponent("provincia", "provincia", "Seleccionar Provincia", provincias)
+
+                <!-- Select Región -->
+                <label for="region">Región:</label>
+                <select id="region" name="region" 
+                        hx-get="/regions" 
+                        hx-target="#comuna" 
+                        hx-swap="innerHTML">
+                    <option value="">Seleccionar Región</option>
+                </select>
+
+                <!-- Select Comuna -->
+                
+                @ComunaComponent(comunas)
+            </form>
+        }
+}

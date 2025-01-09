@@ -1,0 +1,50 @@
+
+**************************************************************************************************************ParseFiles
+// Cargar múltiples plantillas específicas
+
+	tmpl = template.Must(template.ParseFiles(
+		"templates/base.html",
+		"templates/home.html",
+		"templates/about.html",
+	))
+Carga tres archivos HTML específicos.
+La función Must() asegura que cualquier error al analizar las plantillas detenga la ejecución.
+
+
+***************************************************************************************************************** ParseGlob
+// Cargar todas las plantillas .html desde el directorio "templates"
+
+	tmpl = template.Must(template.ParseGlob("templates/*.html"))
+
+Busca y carga todos los archivos .html en el directorio templates.
+Si falla, la función Must genera un pánico y detiene la ejecución.
+
+
+
+// Renderizar la plantilla "home.html"
+
+	err := tmpl.ExecuteTemplate(w, "home.html", data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+Usa la plantilla home.html cargada para renderizar el contenido.
+Si hay errores, responde con un mensaje HTTP 500.
+
+
+
+ParseGlob No incluye subdirectorios:
+
+Solo busca archivos en el directorio especificado, no explora subdirectorios.
+Para incluir subdirectorios, se debe usar un método manual como filepath.Walk (ejemplo en la respuesta anterior).
+Todas las plantillas cargadas comparten un solo espacio de nombres:
+
+Si dos plantillas tienen el mismo nombre en diferentes archivos, puede haber conflictos de nombres.
+
+
+*****************************************************************************************************************
+Diferencias entre ParseFiles y ParseGlob
+Función	Descripción
+template.ParseFiles	Carga archivos específicos pasados como parámetros. Ideal si conoces exactamente qué archivos cargar.
+template.ParseGlob	Carga archivos que coincidan con un patrón, como templates/*.html. Útil para cargar archivos de forma dinámica.
+
+

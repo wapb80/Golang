@@ -1,0 +1,28 @@
+
+-----------------------user_repository.go   gestiona directamente la comunicación con la base de datos
+
+type UserRepository struct {
+	db *sql.DB
+}
+func NewUserRepository(db *sql.DB) *UserRepository {
+	return &UserRepository{db: db}
+}
+
+----------------user_service.go
+
+type UserService struct {
+	repo *repository.UserRepository
+}
+
+func NewUserService(repo *repository.UserRepository) *UserService {
+	return &UserService{repo: repo}
+}
+
+----------------user_huandler.go
+type UserHandler struct {
+	service *service.UserService
+}
+
+func NewUserHandler(service *service.UserService) *UserHandler {
+	return &UserHandler{service: service}
+}

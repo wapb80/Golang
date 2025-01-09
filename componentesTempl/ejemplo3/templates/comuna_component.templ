@@ -1,0 +1,27 @@
+package templates
+
+import "fmt"
+
+
+import (
+    "ejemplo3/models"
+ )
+
+
+templ ComunaComponent(comunas []models.Comuna) {
+// templ ComunaComponent() {
+  {{ first := comunas[0] }} <!-- Usar codigo Go en el templ-->
+    <p>
+        Primera comuna: { first.Name }
+    </p>
+
+  {fmt.Sprintf("nombre es %s",first) } <!-- Usar codigo Go en el templ , para imprimir en el html-->
+
+  <select id="comuna" name="comuna">
+    <option value="">Seleccionar Comuna</option>
+    for _, comuna := range comunas {
+      <option value={comuna.ID}>{comuna.Name}</option>
+    }
+  </select>
+}
+
